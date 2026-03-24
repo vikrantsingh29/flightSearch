@@ -1,0 +1,9 @@
+{
+  "name": "flight-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local official-source scraper for BLR to FRA flight tracking",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
