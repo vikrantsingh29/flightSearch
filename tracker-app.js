@@ -75,6 +75,8 @@ const TRACKER_MODE =
   window.TRACKER_MODE || (window.location.hostname.endsWith('github.io') ? 'static-pages' : 'local-helper');
 const STATIC_DATA_BASE = window.TRACKER_DATA_BASE || './data';
 const TRACKER_PAGES_URL = window.TRACKER_PAGES_URL || 'https://vikrantsingh29.github.io/flightSearch/';
+const NO_CHANCE_LAYOVER_MINUTES = 60;
+const RISKY_LAYOVER_MINUTES = 120;
 let helperAutomatedCodes = ['EK', 'QR'];
 let helperManualCodes = ['GF', 'AI'];
 
@@ -543,6 +545,8 @@ function renderResults(data) {
 
     let cardClass = 'feasible';
     let verdict = '<span class="verdict go">OK</span>';
+    const layoverMinutes =
+      layover.actual !== null && layover.actual !== undefined ? layover.actual : layover.scheduled;
 
     if (live.leg1Status === 'cancelled' || live.leg2Status === 'cancelled') {
       cardClass = 'not-feasible';
@@ -552,7 +556,14 @@ function renderResults(data) {
       cardClass = 'not-feasible';
       verdict = '<span class="verdict no">NO CONNECTION</span>';
       blocked++;
-    } else if (!layover.ok || (live.leg1Status === 'delayed' && live.leg1Delay > 60)) {
+    } else if (layoverMinutes !== null && layoverMinutes < NO_CHANCE_LAYOVER_MINUTES) {
+      cardClass = 'not-feasible';
+      verdict = '<span class="verdict no">NO CHANCE</span>';
+      blocked++;
+    } else if (
+      (layoverMinutes !== null && layoverMinutes <= RISKY_LAYOVER_MINUTES) ||
+      (live.leg1Status === 'delayed' && live.leg1Delay > 60)
+    ) {
       cardClass = 'risky';
       verdict = '<span class="verdict caution">RISKY</span>';
       risky++;
@@ -560,22 +571,20 @@ function renderResults(data) {
       feasible++;
     }
 
-    const layoverMinutes =
-      layover.actual !== null && layover.actual !== undefined ? layover.actual : layover.scheduled;
-    const layoverClass = layoverMinutes !== null && layoverMinutes >= layover.min + 60
+    const layoverClass = layoverMinutes !== null && layoverMinutes > RISKY_LAYOVER_MINUTES
       ? 'enough'
-      : layoverMinutes !== null && layoverMinutes >= layover.min
+      : layoverMinutes !== null && layoverMinutes >= NO_CHANCE_LAYOVER_MINUTES
         ? 'tight'
         : 'miss';
     const layoverLabel = layoverClass === 'enough'
       ? 'Comfortable'
       : layoverClass === 'tight'
-        ? 'Tight'
-        : 'Miss risk';
+        ? 'Risky'
+        : 'No chance';
     const layoverValue = live.leg2Missing || layover.actual === null ? '--' : `${layover.actual}m`;
     const layoverDetail = live.connectionPossible === false && live.connectionReason
       ? live.connectionReason
-      : `layover at ${route.hub} · Min needed: ${layover.min}m · ${layoverLabel}`;
+      : `layover at ${route.hub} · <60m: No chance · 60-120m: Risky · ${layoverLabel}`;
 
     html += `
       <div class="journey-card ${cardClass}">
