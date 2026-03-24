@@ -560,10 +560,7 @@ function renderResults(data) {
       cardClass = 'not-feasible';
       verdict = '<span class="verdict no">NO CHANCE</span>';
       blocked++;
-    } else if (
-      (layoverMinutes !== null && layoverMinutes <= RISKY_LAYOVER_MINUTES) ||
-      (live.leg1Status === 'delayed' && live.leg1Delay > 60)
-    ) {
+    } else if (layoverMinutes !== null && layoverMinutes <= RISKY_LAYOVER_MINUTES) {
       cardClass = 'risky';
       verdict = '<span class="verdict caution">RISKY</span>';
       risky++;
