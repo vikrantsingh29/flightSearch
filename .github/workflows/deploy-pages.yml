@@ -46,7 +46,7 @@ jobs:
             git worktree add -b gh-pages /tmp/gh-pages
           fi
 
-          rsync -av --delete dist/ /tmp/gh-pages/
+          rsync -av --delete --exclude '.git' dist/ /tmp/gh-pages/
 
           cd /tmp/gh-pages
           git add --all
