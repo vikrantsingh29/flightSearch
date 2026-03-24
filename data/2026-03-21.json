@@ -1,0 +1,86 @@
+{
+  "ok": true,
+  "date": "2026-03-21",
+  "source": "local-official-scraper",
+  "automatedAirlines": [
+    "EK",
+    "QR"
+  ],
+  "manualAirlines": [
+    "GF",
+    "AI"
+  ],
+  "airlines": {
+    "EK": {
+      "isLive": true,
+      "source": "Emirates official flight status",
+      "requestedDate": "2026-03-21",
+      "resolvedDate": "2026-03-21",
+      "leg1FlightNumber": "EK565",
+      "leg1Status": "on-time",
+      "leg1Delay": 0,
+      "leg1DepActual": "10:20",
+      "leg1ArrActual": "12:56",
+      "leg1ScheduledDep": "10:25",
+      "leg1ScheduledArr": "13:00",
+      "leg1EstimatedDep": "10:25",
+      "leg1EstimatedArr": "12:58",
+      "leg1DepDisplay": "10:20",
+      "leg1ArrDisplay": "12:56",
+      "leg1DepLabel": "Actual departure",
+      "leg1ArrLabel": "Actual arrival",
+      "leg1Duration": "04:05",
+      "leg1TimeLeft": null,
+      "leg1RawStatus": "Arrived",
+      "leg1RawStatusCode": "ARVD",
+      "leg1SourceUrl": "https://www.emirates.com/us/english/manage-booking/flight-status/results/?origin=BLR&destination=DXB&date=2026-03-21&date-input0=Saturday%2C+21+Mar+26",
+      "leg1Missing": false,
+      "leg2FlightNumber": "EK047",
+      "leg2Status": "delayed",
+      "leg2Delay": 13,
+      "leg2DepActual": "14:26",
+      "leg2ArrActual": "19:33",
+      "leg2ScheduledDep": "14:05",
+      "leg2ScheduledArr": "19:20",
+      "leg2EstimatedDep": "14:30",
+      "leg2EstimatedArr": "19:35",
+      "leg2DepDisplay": "14:26",
+      "leg2ArrDisplay": "19:33",
+      "leg2DepLabel": "Actual departure",
+      "leg2ArrLabel": "Actual arrival",
+      "leg2Duration": "08:15",
+      "leg2TimeLeft": null,
+      "leg2RawStatus": "Arrived",
+      "leg2RawStatusCode": "ARVD",
+      "leg2SourceUrl": "https://www.emirates.com/us/english/manage-booking/flight-status/results/?origin=DXB&destination=FRA&date=2026-03-21&date-input0=Saturday%2C+21+Mar+26",
+      "leg2Missing": false,
+      "layoverScheduledMinutes": 65,
+      "layoverActualMinutes": 90,
+      "minimumLayoverMinutes": 120,
+      "connectionPossible": false,
+      "connectionReason": null,
+      "notes": [
+        "EK565: Arrived",
+        "EK047: Arrived"
+      ]
+    },
+    "QR": {
+      "isLive": false,
+      "error": "Qatar Airways did not publish BLR-DOH flight-status results for the requested date.",
+      "code": "tracked_flights_missing",
+      "source": "Qatar Airways official flight status"
+    },
+    "GF": {
+      "isLive": false,
+      "unsupported": true,
+      "error": "No free automated local scraper is implemented for GF yet."
+    },
+    "AI": {
+      "isLive": false,
+      "unsupported": true,
+      "error": "No free automated local scraper is implemented for AI yet."
+    }
+  },
+  "snapshotGeneratedAt": "2026-03-24T04:04:35.715Z",
+  "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
+}
