@@ -12,8 +12,8 @@ const ROUTES = {
       statusUrl: 'https://www.emirates.com/us/english/manage-booking/flight-status/',
       updatesUrl: 'https://www.emirates.com/us/english/help/travel-updates/',
       airportUrl: 'https://www.frankfurt-airport.com/en/flights-and-transfer/arrivals.html/',
-      statusHint: 'Emirates is automated locally from the official airline source.',
-      strategyHint: 'Use the automated Emirates card first, then open the airline page if you want the full public status view.'
+      statusHint: 'Emirates is sourced from the official airline data flow in local mode and from published snapshots on GitHub Pages.',
+      strategyHint: 'Use the Emirates card first, then open the airline page if you want the full public status view.'
     }
   },
   QR: {
@@ -29,7 +29,7 @@ const ROUTES = {
       statusUrl: 'https://fs.qatarairways.com/flightstatus/search',
       updatesUrl: 'https://www.qatarairways.com/en-am/travel-alerts.html',
       airportUrl: 'https://www.frankfurt-airport.com/en/flights-and-transfer/arrivals.html/',
-      statusHint: 'Qatar Airways is automated locally from the official public flight-status source when the airline publishes a result.',
+      statusHint: 'Qatar Airways is sourced from the official public status flow in local mode and from published snapshots on GitHub Pages when the airline publishes a result.',
       strategyHint: 'Use the QR card first, then open the Qatar status page or travel alerts when the public result is missing for your date.'
     }
   },
@@ -71,6 +71,10 @@ const ROUTES = {
 
 const MIN_LAYOVER = { EK: 120, QR: 90, GF: 90, AI: 150 };
 const LOCAL_TRACKER_BASE_URL = 'http://127.0.0.1:8787';
+const TRACKER_MODE =
+  window.TRACKER_MODE || (window.location.hostname.endsWith('github.io') ? 'static-pages' : 'local-helper');
+const STATIC_DATA_BASE = window.TRACKER_DATA_BASE || './data';
+const TRACKER_PAGES_URL = window.TRACKER_PAGES_URL || 'https://vikrantsingh29.github.io/flightSearch/';
 let helperAutomatedCodes = ['EK', 'QR'];
 let helperManualCodes = ['GF', 'AI'];
 
@@ -181,15 +185,47 @@ function isLocallyAutomated(code) {
   return helperAutomatedCodes.includes(code);
 }
 
+function isStaticPagesMode() {
+  return TRACKER_MODE === 'static-pages';
+}
+
 function getStrategyOverviewText() {
   const automatedText = helperAutomatedCodes.length
-    ? `${formatAirlineList(helperAutomatedCodes)} ${helperAutomatedCodes.length === 1 ? 'is' : 'are'} automated locally from official airline sources.`
-    : 'No airlines are automated locally right now.';
+    ? isStaticPagesMode()
+      ? `${formatAirlineList(helperAutomatedCodes)} ${helperAutomatedCodes.length === 1 ? 'is' : 'are'} published here as GitHub Pages snapshots from official airline sources.`
+      : `${formatAirlineList(helperAutomatedCodes)} ${helperAutomatedCodes.length === 1 ? 'is' : 'are'} automated locally from official airline sources.`
+    : isStaticPagesMode()
+      ? 'No airline snapshots are published right now.'
+      : 'No airlines are automated locally right now.';
   const manualText = helperManualCodes.length
     ? ` ${formatAirlineList(helperManualCodes)} ${helperManualCodes.length === 1 ? 'still uses' : 'still use'} the official click-through pages below.`
     : '';
 
   return `${automatedText}${manualText}`;
+}
+
+function updateLastUpdated(label, timestamp = null) {
+  const value = timestamp ? new Date(timestamp) : new Date();
+  const safeValue = Number.isNaN(value.getTime()) ? new Date() : value;
+
+  document.getElementById('lastUpdated').textContent =
+    `Updated: ${safeValue.toLocaleString()} · ${label}`;
+}
+
+function getLoadingMessage() {
+  if (isStaticPagesMode()) {
+    return 'Loading the latest published GitHub Pages snapshot for Emirates and Qatar Airways, then preparing manual-source cards for the remaining airlines.';
+  }
+
+  return 'Checking the localhost helper for Emirates and Qatar Airways, then preparing manual-source cards for the remaining airlines.';
+}
+
+function getResultLabel(payload, selectedDateObj) {
+  if (isStaticPagesMode()) {
+    return `Published snapshot · ${formatDisplayDate(selectedDateObj)}`;
+  }
+
+  return `Official source · ${formatDisplayDate(selectedDateObj)}`;
 }
 
 function getVisibleAirlineCodes() {
@@ -285,6 +321,15 @@ function renderLocalHelperState(clearErrors = false, reason = '') {
     'Local Helper Required',
     `Run <code>npm start</code> in this folder to enable ${formatAirlineList(helperAutomatedCodes)} automation from the airlines' official public sources.${reason ? `<br><br><strong>Last helper error:</strong> ${reason}` : ''}`,
     'Local helper offline',
+    clearErrors
+  );
+}
+
+function renderStaticSnapshotState(clearErrors = false, reason = '') {
+  renderOfficialStrategy(
+    'Published Snapshot Unavailable',
+    `This GitHub Pages build shows published snapshots generated from the official-source scraper.${reason ? `<br><br><strong>Last snapshot error:</strong> ${reason}` : ''}<br><br>Try the live version at <a href="${TRACKER_PAGES_URL}" target="_blank" rel="noopener noreferrer">${TRACKER_PAGES_URL}</a> after the next deployment, or run <code>npm start</code> locally for live helper mode.`,
+    'Published snapshot unavailable',
     clearErrors
   );
 }
@@ -418,6 +463,9 @@ function getUnavailableMessage(code, record) {
 
   if (isLocallyAutomated(code)) {
     const detail = record?.error || `${route.name} did not publish a usable public result for ${selectedDateText}.`;
+    if (isStaticPagesMode()) {
+      return `The published snapshot did not include a usable ${route.name} result for ${selectedDateText}. ${detail}`;
+    }
     return `The local helper reached ${possessiveName} official public source, but it did not return a usable result for ${selectedDateText}. ${detail}`;
   }
 
@@ -646,6 +694,30 @@ async function fetchLocalTrackerPayload(date, airline) {
   return payload;
 }
 
+async function fetchStaticTrackerPayload(date) {
+  const url = new URL(`${STATIC_DATA_BASE}/${formatApiDate(date)}.json`, window.location.href);
+
+  let response;
+  try {
+    response = await fetch(url.toString(), { cache: 'no-store' });
+  } catch (error) {
+    throw new Error(`Could not load the published snapshot from ${url.toString()}.`);
+  }
+
+  if (!response.ok) {
+    throw new Error(`No published snapshot is available for ${formatDisplayDate(date)} yet.`);
+  }
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    throw new Error('The published snapshot returned invalid JSON.');
+  }
+
+  return payload;
+}
+
 async function fetchData() {
   const fetchToken = ++activeFetchToken;
   const button = document.getElementById('refreshBtn');
@@ -659,11 +731,13 @@ async function fetchData() {
       <div class="state-box">
         <div class="spinner"></div>
         <h3>Fetching official flight data...</h3>
-        <p>Checking the localhost helper for Emirates and Qatar Airways, then preparing manual-source cards for the remaining airlines.</p>
+        <p>${getLoadingMessage()}</p>
       </div>
     `;
 
-    const payload = await fetchLocalTrackerPayload(selectedDateObj, selectedAirline);
+    const payload = isStaticPagesMode()
+      ? await fetchStaticTrackerPayload(selectedDateObj)
+      : await fetchLocalTrackerPayload(selectedDateObj, selectedAirline);
     if (fetchToken !== activeFetchToken) return;
 
     helperAutomatedCodes = Array.isArray(payload.automatedAirlines) && payload.automatedAirlines.length
@@ -694,10 +768,17 @@ async function fetchData() {
     }
 
     renderResults(data);
-    updateLastUpdated(`Official source · ${formatDisplayDate(selectedDateObj)}`);
+    updateLastUpdated(
+      getResultLabel(payload, selectedDateObj),
+      payload.snapshotGeneratedAt || payload.generatedAt || null
+    );
   } catch (error) {
     if (fetchToken !== activeFetchToken) return;
-    renderLocalHelperState(true, error?.message || 'Unexpected local helper error.');
+    if (isStaticPagesMode()) {
+      renderStaticSnapshotState(true, error?.message || 'Unexpected published snapshot error.');
+    } else {
+      renderLocalHelperState(true, error?.message || 'Unexpected local helper error.');
+    }
   } finally {
     button.classList.remove('loading');
   }

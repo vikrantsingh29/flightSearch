@@ -1,0 +1,5 @@
+node_modules/
+dist/
+chrome-shot.png
+package-lock.json
+*.log
