@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLR → FRA Flight Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060a12;
+    --surface: #0d1420;
+    --surface2: #131c2e;
+    --border: #1e2d45;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --green: #00e676;
+    --yellow: #ffd740;
+    --red: #ff4444;
+    --text: #e8f0fe;
+    --muted: #5c7094;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 20px; position: relative; z-index: 1; }
+
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .logo-zone h1 {
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .route-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.05));
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 40px;
+    padding: 6px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 8px;
+    display: block;
+    width: fit-content;
+  }
+
+  .route-badge .dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .last-updated {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.3);
+    color: var(--accent);
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+
+  .refresh-btn:hover { background: rgba(0,212,255,0.2); transform: translateY(-1px); }
+  .refresh-btn.loading svg { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Airline selector tabs */
+  .airline-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tab:hover { border-color: var(--accent); color: var(--text); }
+  .tab.active { background: rgba(0,212,255,0.12); border-color: var(--accent); color: var(--accent); }
+  .tab .airline-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Date strip */
+  .date-strip {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .date-strip::-webkit-scrollbar { height: 3px; }
+  .date-strip::-webkit-scrollbar-track { background: var(--surface); }
+  .date-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+  .date-pill {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    text-align: center;
+    min-width: 70px;
+    transition: all 0.2s;
+  }
+
+  .date-pill:hover { border-color: var(--accent); }
+  .date-pill.active { background: rgba(0,212,255,0.12); border-color: var(--accent); }
+  .date-pill .day { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; }
+  .date-pill .num { font-size: 18px; font-weight: 800; line-height: 1.2; }
+  .date-pill .month { font-size: 11px; color: var(--muted); }
+  .date-pill.today .num { color: var(--accent); }
+  .date-pill.target .num { color: var(--accent2); }
+  .date-pill.target { border-color: rgba(255,107,53,0.4); }
+
+  /* Loading / error states */
+  .state-box {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--muted);
+  }
+  .state-box .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+  .state-box h3 { font-size: 18px; color: var(--text); margin-bottom: 8px; }
+  .state-box p { font-size: 14px; line-height: 1.6; max-width: 400px; margin: 0 auto; }
+
+  /* Flight cards */
+  #results { display: flex; flex-direction: column; gap: 20px; }
+
+  .airline-section { }
+
+  .airline-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .airline-logo {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .airline-name { font-size: 18px; font-weight: 800; }
+  .airline-hub { font-size: 12px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+  .journey-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+
+  .journey-card:hover { border-color: rgba(0,212,255,0.3); transform: translateY(-2px); }
+
+  .journey-card.feasible { border-left: 3px solid var(--green); }
+  .journey-card.risky { border-left: 3px solid var(--yellow); }
+  .journey-card.not-feasible { border-left: 3px solid var(--red); }
+
+  .journey-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .flight-seg {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 80px;
+  }
+
+  .flight-seg .iata {
+    font-size: 28px;
+    font-weight: 800;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: -1px;
+  }
+
+  .flight-seg .city {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .flight-seg .time {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    color: var(--text);
+  }
+
+  .flight-seg .date-small {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .arrow-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 0 16px;
+    min-width: 100px;
+  }
+
+  .flight-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface2);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .arrow-line {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+  }
+
+  .arrow-line hr {
+    flex: 1;
+    border: none;
+    border-top: 1.5px dashed var(--border);
+  }
+
+  .arrow-line .plane-icon { font-size: 14px; color: var(--muted); }
+
+  .duration {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .status-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  .status-badge.on-time { background: rgba(0,230,118,0.15); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+  .status-badge.delayed { background: rgba(255,215,64,0.15); color: var(--yellow); border: 1px solid rgba(255,215,64,0.3); }
+  .status-badge.cancelled { background: rgba(255,68,68,0.15); color: var(--red); border: 1px solid rgba(255,68,68,0.3); }
+  .status-badge.scheduled { background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
+  .status-badge.unknown { background: rgba(92,112,148,0.2); color: var(--muted); border: 1px solid var(--border); }
+
+  .journey-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px 16px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .layover-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .layover-icon { font-size: 16px; }
+
+  .layover-time {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+  }
+
+  .layover-time.enough { color: var(--green); }
+  .layover-time.tight { color: var(--yellow); }
+  .layover-time.miss { color: var(--red); }
+
+  .layover-label { color: var(--muted); font-size: 12px; }
+
+  .verdict {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .verdict.go { color: var(--green); }
+  .verdict.caution { color: var(--yellow); }
+  .verdict.no { color: var(--red); }
+
+  .delay-info {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Summary bar */
+  .summary-bar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .summary-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .summary-chip .val {
+    font-size: 22px;
+    font-weight: 800;
+    font-family: 'Space Mono', monospace;
+    line-height: 1;
+  }
+
+  .summary-chip .lbl { color: var(--muted); font-size: 11px; }
+
+  .no-flights {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: 15px;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+  }
+
+  .api-note {
+    margin-top: 40px;
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .api-note strong { color: var(--text); }
+  .api-note a { color: var(--accent); text-decoration: none; }
+  .api-note a:hover { text-decoration: underline; }
+
+  .api-note ul { padding-left: 20px; margin-top: 8px; }
+  .api-note li { margin-bottom: 4px; }
+
+  .strategy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 28px;
+  }
+
+  .strategy-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .strategy-card h4 {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  .strategy-card .meta {
+    color: var(--muted);
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 12px;
+  }
+
+  .strategy-card p {
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .strategy-list {
+    margin: 0 0 14px 0;
+    padding-left: 18px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .strategy-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .strategy-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,212,255,0.35);
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .strategy-link.alt {
+    border-color: rgba(255,215,64,0.25);
+    background: rgba(255,215,64,0.08);
+    color: var(--yellow);
+  }
+
+  .strategy-overview {
+    margin-top: 22px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,212,255,0.22);
+    background: rgba(0,212,255,0.05);
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  /* Divider between legs */
+  .leg-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 24px;
+    margin: -4px 0;
+  }
+
+  .leg-divider hr { flex: 1; border: none; border-top: 1px solid var(--border); }
+  .leg-label { font-size: 10px; font-family: 'Space Mono', monospace; color: var(--muted); background: var(--surface2); padding: 2px 10px; border-radius: 10px; border: 1px solid var(--border); }
+
+  @media (max-width: 600px) {
+    .journey-top { padding: 16px; }
+    .flight-seg .iata { font-size: 22px; }
+    .flight-seg .time { font-size: 16px; }
+    .arrow-zone { min-width: 70px; padding: 0 8px; }
+    .journey-bottom { padding: 10px 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo-zone">
+      <h1>Flight Intelligence</h1>
+      <span class="route-badge">
+        <span class="dot"></span>
+        BLR → FRA · Connecting Flights Monitor
+      </span>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+      <div class="last-updated" id="lastUpdated">Not fetched yet</div>
+      <button class="refresh-btn" id="refreshBtn" onclick="fetchData()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh Official Data
+      </button>
+    </div>
+  </header>
+
+  <!-- CRISIS ALERT -->
+  <div style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.5);border-radius:14px;padding:16px 20px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start;">
+    <div style="font-size:22px;flex-shrink:0;">🚨</div>
+    <div>
+      <div style="font-weight:800;color:#ff6666;font-size:14px;margin-bottom:6px;">CRITICAL: Middle East Airspace Crisis — Affects Your April 4/5 Travel</div>
+      <div style="font-size:13px;color:#cc8888;line-height:1.7;">
+        <strong style="color:#ffaaaa;">Qatar Airways:</strong> Qatari airspace closed since Feb 28 (US-Israel-Iran conflict). Only very limited flights. <strong style="color:#ffaaaa;">Do NOT rely on Qatar for Apr 4/5.</strong><br>
+        <strong style="color:#ffccaa;">Emirates/Gulf Air:</strong> Dubai briefly disrupted Mar 7 (drone), now resumed. UAE airspace mostly operational.<br>
+        <strong style="color:#aaffaa;">Safest options:</strong> Emirates via DXB or Air India via DEL are most reliable right now.
+      </div>
+    </div>
+  </div>
+
+  <!-- Airline tabs -->
+  <div class="airline-tabs">
+    <div class="tab active" onclick="setAirline('all')">
+      <span class="airline-dot" style="background:#00d4ff"></span>
+      All Airlines
+    </div>
+    <div class="tab" onclick="setAirline('EK')">
+      <span class="airline-dot" style="background:#d4a843"></span>
+      Emirates · DXB
+    </div>
+    <div class="tab" onclick="setAirline('QR')">
+      <span class="airline-dot" style="background:#8b1a2a"></span>
+      Qatar Airways · DOH
+    </div>
+    <div class="tab" onclick="setAirline('GF')">
+      <span class="airline-dot" style="background:#c2002f"></span>
+      Gulf Air · BAH
+    </div>
+    <div class="tab" onclick="setAirline('AI')">
+      <span class="airline-dot" style="background:#e05a11"></span>
+      Air India · Various
+    </div>
+  </div>
+
+  <!-- Date strip -->
+  <div class="date-strip" id="dateStrip"></div>
+
+  <!-- Summary -->
+  <div class="summary-bar" id="summaryBar"></div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="state-box">
+      <div style="font-size:48px; margin-bottom:16px;">✈️</div>
+      <h3>Ready to Check Flights</h3>
+      <p>Click <strong>Refresh Official Data</strong> to fetch Emirates and Qatar Airways from the local official-source helper, then fall back to manual checks for the remaining airlines.</p>
+    </div>
+  </div>
+
+  <div class="api-note">
+    <strong>Free local setup:</strong> This page now uses a local helper at <a href="http://127.0.0.1:8787/" target="_blank" rel="noopener noreferrer">http://127.0.0.1:8787</a> to fetch Emirates and Qatar Airways from the airlines' own official public flight-status endpoints.<br><br>
+    <strong>Run it from this folder:</strong> <code>npm start</code><br>
+    <strong>Then open:</strong> <a href="http://127.0.0.1:8787/flight-tracker-fixed.html" target="_blank" rel="noopener noreferrer">http://127.0.0.1:8787/flight-tracker-fixed.html</a><br><br>
+    <strong>Coverage right now:</strong>
+    <ul>
+      <li>Emirates: automated from the official Emirates status service</li>
+      <li>Qatar Airways: automated from the official Qatar Airways status service when the public source publishes a result</li>
+      <li>Gulf Air: manual official-source links only</li>
+      <li>Air India: manual official-source links only</li>
+    </ul>
+    <div style="margin-top:10px; padding:10px 14px; background:rgba(0,212,255,0.07); border:1px solid rgba(0,212,255,0.2); border-radius:8px;">
+      <strong style="color:var(--accent)">Real data only:</strong> Emirates and Qatar Airways are pulled from the airlines' own sources through the localhost helper. If the helper is offline, or if an airline does not publish a public result for the selected date, the page falls back to official airline and airport links instead of fake status cards.
+    </div>
+  </div>
+</div>
+
+<script type="text/plain" id="legacy-tracker-script">
+// ⚠️ REAL SCHEDULES — verified March 2026
+// EK568 is DXB→BLR (inbound). BLR→DXB is EK565 (daily, departs ~01:45 IST, arr DXB ~04:00)
+// EK47: DXB→FRA departs 14:05 DXB, arrives 19:20 FRA (daily)
+// QR573: BLR→DOH departs ~09:25 IST (as seen on Qatar website), connects QR067 DOH→FRA
+// QR067: DOH→FRA. NOTE: Qatar Airways on LIMITED schedule due to Qatari airspace closure (war)
+// GF209: BLR→BAH, GF004: BAH→FRA
+// AI503/AI121 via DEL
+
+const ROUTES = {
+  EK: { name: 'Emirates', hub: 'DXB', hubCity: 'Dubai', color: '#d4a843',
+    legs: [
+      { from:'BLR', to:'DXB', flightNum:'EK565', depTime:'01:45 IST', arrTime:'04:00+4', dur:'4h15m' },
+      { from:'DXB', to:'FRA', flightNum:'EK047', depTime:'14:05+4', arrTime:'19:20 CET', dur:'7h15m' },
+    ],
+    official: {
+      statusUrl: 'https://www.emirates.com/us/english/manage-booking/flight-status/',
+      updatesUrl: 'https://www.emirates.com/us/english/help/travel-updates/',
+      airportUrl: 'https://www.frankfurt-airport.com/en/flights-and-transfer/arrivals.html/',
+      statusHint: 'Emirates has an official flight-status page and says you can sign up for future alerts.',
+      strategyHint: 'Use Emirates status first, then check Frankfurt arrivals for the second leg on the day of travel.'
+    },
+    note: ''
+  },
+  QR: { name: 'Qatar Airways', hub: 'DOH', hubCity: 'Doha', color: '#8b1a2a',
+    legs: [
+      { from:'BLR', to:'DOH', flightNum:'QR573', depTime:'09:25 IST', arrTime:'11:30 DOH', dur:'4h35m' },
+      { from:'DOH', to:'FRA', flightNum:'QR71', depTime:'14:00 DOH', arrTime:'20:55 CET', dur:'7h55m' },
+    ],
+    official: {
+      statusUrl: 'https://www.qatarairways.com/en-gb/mobile-app-travel-updates.html',
+      updatesUrl: 'https://www.qatarairways.com/en-am/travel-alerts.html',
+      airportUrl: 'https://www.frankfurt-airport.com/en/flights-and-transfer/arrivals.html/',
+      statusHint: 'Qatar pushes passengers toward travel alerts and the mobile app for real-time trip updates.',
+      strategyHint: 'Check Qatar travel alerts before trusting any schedule because current operations can change quickly.'
+    },
+    warning: '⚠️ AIRSPACE CRISIS: Qatar airspace closed since Feb 28. Only limited approved flights operating. Verify booking directly with Qatar Airways before travelling.',
+    warningColor: '#ff4444'
+  },
+  GF: { name: 'Gulf Air', hub: 'BAH', hubCity: 'Bahrain', color: '#c2002f',
+    legs: [
+      { from:'BLR', to:'BAH', flightNum:'GF209', depTime:'05:45 IST', arrTime:'08:00+3', dur:'4h15m' },
+      { from:'BAH', to:'FRA', flightNum:'GF004', depTime:'10:00+3', arrTime:'14:20 CET', dur:'6h20m' },
+    ],
+    official: {
+      statusUrl: 'https://www.gulfair.com/flying-with-us/before-you-travel/flight-status',
+      updatesUrl: 'https://www.gulfair.com/en/',
+      airportUrl: 'https://www.frankfurt-airport.com/en/flights-and-transfer/arrivals.html/',
+      statusHint: 'Gulf Air exposes a public flight-status form on its website.',
+      strategyHint: 'Use Gulf Air flight status for both legs, then verify the Frankfurt arrival board for GF004.'
+    },
+    note: ''
+  },
+  AI: { name: 'Air India', hub: 'DEL', hubCity: 'Delhi', color: '#e05a11',
+    legs: [
+      { from:'BLR', to:'DEL', flightNum:'AI503', depTime:'06:00 IST', arrTime:'09:10 IST', dur:'3h10m' },
+      { from:'DEL', to:'FRA', flightNum:'AI121', depTime:'14:10 IST', arrTime:'18:30 CET', dur:'9h20m' },
+    ],
+    official: {
+      statusUrl: 'https://www.airindia.com/in/en/manage/flight-status.html',
+      updatesUrl: 'https://www.airindia.com/in/en/middle-east-travel-updates.html',
+      airportUrl: 'https://www.frankfurt-airport.com/en/flights-and-transfer/arrivals.html/',
+      statusHint: 'Air India says flight status is available only for two days before and after the current date.',
+      strategyHint: 'Outside the 2-day window, use Air India network updates and then re-check the official status page once the date gets closer.'
+    },
+    note: ''
+  },
+};
+
+const MIN_LAYOVER = { EK: 120, QR: 90, GF: 90, AI: 150 }; // minutes — QR: 2h30m scheduled, 90m minimum (tight if any delay)
+
+let selectedAirline = 'all';
+let selectedDate = null;
+let dates = [];
+let currentData = null;
+
+function generateDates() {
+  const d = [];
+  const today = new Date();
+  // Past 3 days
+  for (let i = 3; i >= 1; i--) {
+    const dd = new Date(today);
+    dd.setDate(today.getDate() - i);
+    d.push({ date: dd, past: true });
+  }
+  // Today plus the next 14 days
+  for (let i = 0; i <= 14; i++) {
+    const dd = new Date(today);
+    dd.setDate(today.getDate() + i);
+    d.push({ date: dd, past: false });
+  }
+  return d;
+}
+
+function getSelectedDateIndex() {
+  if (selectedDate !== null && dates[selectedDate]) return selectedDate;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const todayIdx = dates.findIndex(d => d.date.toDateString() === today.toDateString());
+  return todayIdx >= 0 ? todayIdx : Math.min(3, Math.max(dates.length - 1, 0));
+}
+
+function getStoredApiKey() {
+  return (localStorage.getItem('avistack_key') || '').trim();
+}
+
+function getActiveApiKey() {
+  const input = document.getElementById('apiKey')?.value.trim() || '';
+  return input || getStoredApiKey();
+}
+
+function getDateMode(date) {
+  const selected = new Date(date);
+  selected.setHours(0,0,0,0);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  if (selected.getTime() < today.getTime()) return 'past';
+  if (selected.getTime() > today.getTime()) return 'future';
+  return 'today';
+}
+
+function formatApiDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(date) {
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+function updateLastUpdated(label) {
+  document.getElementById('lastUpdated').textContent =
+    `Updated: ${new Date().toLocaleTimeString()} · ${label}`;
+}
+
+function getVisibleAirlineCodes() {
+  return selectedAirline === 'all' ? Object.keys(ROUTES) : [selectedAirline];
+}
+
+function getSelectedDateObject() {
+  return dates[getSelectedDateIndex()]?.date || new Date();
+}
+
+function clearApiErrors() {
+  document.querySelectorAll('.api-banner').forEach(el => el.remove());
+}
+
+function showApiBanner(title, body, tone = 'warning') {
+  const existing = document.querySelector('.api-banner');
+  if (existing) return;
+  const note = document.createElement('div');
+  const palette = tone === 'info'
+    ? {
+        background: 'rgba(0,212,255,0.08)',
+        border: 'rgba(0,212,255,0.35)',
+        color: '#8deaff'
+      }
+    : {
+        background: 'rgba(255,215,64,0.08)',
+        border: 'rgba(255,215,64,0.35)',
+        color: '#ffd740'
+      };
+  note.className = 'api-banner';
+  note.style.cssText = `background:${palette.background};border:1px solid ${palette.border};border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:${palette.color};line-height:1.7;`;
+  note.innerHTML = `<strong>${title}:</strong> ${body}`;
+  const results = document.getElementById('results');
+  results.parentNode.insertBefore(note, results);
+}
+
+function renderStateBox(title, message, icon = '✈️', clearErrors = false, label = 'Waiting') {
+  if (clearErrors) clearApiErrors();
+  currentData = null;
+  document.getElementById('summaryBar').innerHTML = '';
+  document.getElementById('results').innerHTML = `
+    <div class="state-box">
+      <div style="font-size:48px; margin-bottom:16px;">${icon}</div>
+      <h3>${title}</h3>
+      <p>${message}</p>
+    </div>
+  `;
+  updateLastUpdated(label);
+}
+
+function renderMissingKeyState(clearErrors = false) {
+  renderOfficialStrategy(
+    'Free Plan: Official Sources',
+    'Paid flight-history APIs are out. Use the airline and airport pages below for the selected route instead of trying to scrape them inside browser JavaScript.',
+    'Official-source plan',
+    clearErrors
+  );
+}
+
+function renderFutureUnavailableState(date) {
+  renderOfficialStrategy(
+    'Future Date Strategy',
+    `There is no reliable free API for live future status on ${formatDisplayDate(date)}. For this date, rely on airline alerts now and switch to official flight-status tools closer to departure.`,
+    'Future strategy',
+    false
+  );
+}
+
+function renderOfficialStrategy(title, message, label = 'Official-source plan', clearErrors = false) {
+  if (clearErrors) clearApiErrors();
+  currentData = null;
+  document.getElementById('summaryBar').innerHTML = '';
+
+  const selectedDateObj = getSelectedDateObject();
+  const dateMode = getDateMode(selectedDateObj);
+  const cards = getVisibleAirlineCodes().map(code => {
+    const route = ROUTES[code];
+    const official = route.official || {};
+    const timingNote = dateMode === 'future'
+      ? 'Use alerts/schedules now, then re-check the official status tool inside 48 hours of departure.'
+      : dateMode === 'past'
+        ? 'Past status is usually paywalled. Use the official site only if it still exposes the date, otherwise rely on archived alerts or booking records.'
+        : 'Check the airline page first, then verify the final leg against Frankfurt Airport arrivals.';
+
+    return `
+      <div class="strategy-card">
+        <h4>${route.name}</h4>
+        <div class="meta">${route.legs[0].flightNum} · ${route.legs[1].flightNum} · via ${route.hub}</div>
+        <p>${official.statusHint || ''}</p>
+        <ul class="strategy-list">
+          <li>${official.strategyHint || ''}</li>
+          <li>${timingNote}</li>
+          <li>Selected date: ${formatDisplayDate(selectedDateObj)}</li>
+        </ul>
+        <div class="strategy-actions">
+          <a class="strategy-link" href="${official.statusUrl || '#'}" target="_blank" rel="noopener noreferrer">Open airline status</a>
+          <a class="strategy-link alt" href="${official.updatesUrl || '#'}" target="_blank" rel="noopener noreferrer">Open travel updates</a>
+          <a class="strategy-link" href="${official.airportUrl || '#'}" target="_blank" rel="noopener noreferrer">Open FRA arrivals</a>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('results').innerHTML = `
+    <div class="state-box">
+      <div style="font-size:48px; margin-bottom:16px;">🧭</div>
+      <h3>${title}</h3>
+      <p>${message}</p>
+    </div>
+    <div class="strategy-overview">
+      Static HTML running in a browser is the wrong place to scrape airline sites directly. Official pages usually block cross-origin fetches or anti-bot scraping, so the free path is click-through verification using the official pages below.
+    </div>
+    <div class="strategy-grid">${cards}</div>
+  `;
+  updateLastUpdated(label);
+}
+
+function renderDateStrip() {
+  const strip = document.getElementById('dateStrip');
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  strip.innerHTML = dates.map((d, i) => {
+    const dd = d.date;
+    const isToday = dd.toDateString() === today.toDateString();
+    const isTarget = (dd.getDate() === 4 || dd.getDate() === 5) && dd.getMonth() === 3; // April 4,5
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `<div class="date-pill ${isToday?'today':''} ${isTarget?'target':''} ${selectedDate===i?'active':''}"
+      onclick="selectDate(${i})" title="${isTarget?'Your target travel date':''}">
+      <div class="day">${days[dd.getDay()]}</div>
+      <div class="num">${dd.getDate()}</div>
+      <div class="month">${months[dd.getMonth()]}</div>
+      ${isTarget ? '<div style="font-size:9px;color:#ff6b35;font-weight:700;">TARGET</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function selectDate(i) {
+  selectedDate = i;
+  renderDateStrip();
+  const activeKey = getActiveApiKey();
+  const mode = getDateMode(dates[i].date);
+  clearApiErrors();
+
+  if (mode === 'future') {
+    showApiBanner(
+      'Date Note',
+      `Free data sources do not expose reliable future flight status for <strong>${formatDisplayDate(dates[i].date)}</strong>. Use airline alerts now and switch to official status tools closer to departure.`,
+      'info'
+    );
+    renderFutureUnavailableState(dates[i].date);
+    return;
+  }
+
+  if (activeKey) {
+    fetchData();
+  } else {
+    renderMissingKeyState(false);
+  }
+}
+
+function setAirline(code) {
+  selectedAirline = code;
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.remove('active');
+    if ((['all','EK','QR','GF','AI'][i]) === code) t.classList.add('active');
+  });
+  if (currentData) renderResults(currentData);
+}
+
+function calcLayover(route, leg1Delay, leg2Delay) {
+  // EK: BLR dep 01:45 IST → arr DXB ~04:00. DXB dep 14:05 → arr FRA 19:20. Layover ~635m
+  // QR: BLR dep 09:25 IST → arr DOH 11:30. DOH dep 14:00 → arr FRA 20:55. Layover 2h30m = 150m
+  // GF: BLR dep 05:45 IST → arr BAH 08:00. BAH dep 10:00 → arr FRA 14:20. Layover ~120m
+  // AI: BLR dep 06:00 IST → arr DEL 09:10. DEL dep 14:10 IST. Layover ~300m
+  const layoverMap = { EK: 635, QR: 150, GF: 120, AI: 300 }; // scheduled layover mins
+  const scheduled = layoverMap[route];
+  const actual = scheduled - leg1Delay; // if leg1 delayed, less time at hub
+  const min = MIN_LAYOVER[route];
+  return { scheduled, actual, min, ok: actual >= min };
+}
+
+function renderResults(data) {
+  currentData = data;
+  const results = document.getElementById('results');
+  const airlineCodes = (selectedAirline === 'all' ? Object.keys(ROUTES) : [selectedAirline])
+    .filter(code => data[code]?.isLive);
+
+  if (!airlineCodes.length) {
+    renderStateBox(
+      'No Live Flight Data',
+      'AviationStack did not return any live routes for the current filters.',
+      '📭',
+      false,
+      'No live data'
+    );
+    return;
+  }
+
+  let feasible = 0, risky = 0, no = 0;
+
+  let html = '';
+  airlineCodes.forEach(code => {
+    const route = ROUTES[code];
+    const d = data[code];
+    const layover = calcLayover(code, d.leg1Delay, d.leg2Delay);
+
+    let cardClass = 'feasible';
+    let verdict = '<span class="verdict go">✅ GO</span>';
+    if (d.leg1Status === 'cancelled' || d.leg2Status === 'cancelled') {
+      cardClass = 'not-feasible'; verdict = '<span class="verdict no">❌ CANCELLED</span>'; no++;
+    } else if (!layover.ok || d.leg1Status === 'delayed' && d.leg1Delay > 60) {
+      cardClass = 'risky'; verdict = '<span class="verdict caution">⚠️ RISKY</span>'; risky++;
+    } else {
+      feasible++;
+    }
+
+    const layoverClass = layover.actual >= layover.min + 60 ? 'enough' : layover.actual >= layover.min ? 'tight' : 'miss';
+    const layoverLabel = layoverClass === 'enough' ? 'Comfortable' : layoverClass === 'tight' ? 'Tight' : 'Miss risk';
+
+    html += `<div class="journey-card ${cardClass}">
+      <div class="journey-top">
+        <div style="display:flex;align-items:center;gap:10px;width:100%;">
+          <div style="width:36px;height:36px;border-radius:9px;background:${route.color}22;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:${route.color};font-family:'Space Mono',monospace;flex-shrink:0;">${code}</div>
+          <div>
+            <div style="font-weight:800;font-size:15px;">${route.name}</div>
+            <div style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;">via ${route.hub} · ${route.hubCity}</div>
+          </div>
+          <div style="margin-left:auto;">${verdict}</div>
+        </div>
+      </div>
+
+      ${route.warning ? `<div style="margin:0 16px 12px;padding:10px 14px;background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.4);border-radius:10px;font-size:12px;color:#ff8888;line-height:1.6;">${route.warning}</div>` : ''}
+
+      <!-- Leg 1 -->
+      <div style="padding:0 24px 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <div class="flight-seg">
+          <div class="iata">${route.legs[0].from}</div>
+          <div class="time">${route.legs[0].depTime}</div>
+          <div class="date-small">Leg 1</div>
+        </div>
+        <div class="arrow-zone">
+          <div class="flight-number">${route.legs[0].flightNum}</div>
+          <div class="arrow-line"><hr><span class="plane-icon">✈</span><hr></div>
+          <div class="duration">${route.legs[0].dur}</div>
+        </div>
+        <div class="flight-seg" style="text-align:right;">
+          <div class="iata">${route.legs[0].to}</div>
+          <div class="time">${route.legs[0].arrTime}</div>
+          <div class="date-small">${route.hub}</div>
+        </div>
+        <div style="margin-left:auto;">
+          <span class="status-badge ${d.leg1Status}">${d.leg1Status.replace('-',' ').toUpperCase()}${d.leg1Delay>0?' +'+d.leg1Delay+'m':''}</span>
+        </div>
+      </div>
+
+      <!-- Leg 2 -->
+      <div style="padding:0 24px 12px; display:flex; align-items:center; gap:8px; border-top:1px dashed var(--border); padding-top:12px; flex-wrap:wrap;">
+        <div class="flight-seg">
+          <div class="iata">${route.legs[1].from}</div>
+          <div class="time">${route.legs[1].depTime}</div>
+          <div class="date-small">Leg 2</div>
+        </div>
+        <div class="arrow-zone">
+          <div class="flight-number">${route.legs[1].flightNum}</div>
+          <div class="arrow-line"><hr><span class="plane-icon">✈</span><hr></div>
+          <div class="duration">${route.legs[1].dur}</div>
+        </div>
+        <div class="flight-seg" style="text-align:right;">
+          <div class="iata">${route.legs[1].to}</div>
+          <div class="time">${route.legs[1].arrTime}</div>
+          <div class="date-small">FRA</div>
+        </div>
+        <div style="margin-left:auto;">
+          <span class="status-badge ${d.leg2Status}">${d.leg2Status.replace('-',' ').toUpperCase()}${d.leg2Delay>0?' +'+d.leg2Delay+'m':''}</span>
+        </div>
+      </div>
+
+      <div class="journey-bottom">
+        <div class="layover-info">
+          <span class="layover-icon">🔄</span>
+          <span class="layover-time ${layoverClass}">${layover.actual}m</span>
+          <span class="layover-label">layover at ${route.hub} · Min needed: ${layover.min}m · ${layoverLabel}</span>
+        </div>
+        ${d.leg1Delay > 0 ? `<div class="delay-info">⏱ Leg 1 delayed ${d.leg1Delay}m → effective layover reduced</div>` : ''}
+      </div>
+    </div>`;
+  });
+
+  results.innerHTML = html;
+
+  // Summary
+  const summary = document.getElementById('summaryBar');
+  summary.innerHTML = `
+    <div class="summary-chip"><div><div class="val" style="color:var(--green)">${feasible}</div><div class="lbl">Feasible</div></div></div>
+    <div class="summary-chip"><div><div class="val" style="color:var(--yellow)">${risky}</div><div class="lbl">Risky</div></div></div>
+    <div class="summary-chip"><div><div class="val" style="color:var(--red)">${no}</div><div class="lbl">Cancelled/Miss</div></div></div>
+    <div class="summary-chip"><div><div class="val" style="color:var(--accent)">${airlineCodes.length}</div><div class="lbl">Routes checked</div></div></div>
+  `;
+}
+
+async function fetchData() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('loading');
+
+  // Clear any previous error banners
+  clearApiErrors();
+
+  const inputKey = document.getElementById('apiKey').value.trim();
+  const apiKey = inputKey || getStoredApiKey() || '';
+
+  if (inputKey) localStorage.setItem('avistack_key', inputKey);
+
+  const dateIdx = getSelectedDateIndex();
+  const selectedDateObj = dates[dateIdx]?.date;
+  const dateMode = selectedDateObj ? getDateMode(selectedDateObj) : 'today';
+
+  try {
+    if (!apiKey) {
+      renderMissingKeyState(true);
+      return;
+    }
+
+    if (dateMode === 'future') {
+      showApiBanner(
+        'Date Note',
+        `Reliable free data sources do not provide future-day live status for <strong>${formatDisplayDate(selectedDateObj)}</strong>. Use the official airline alerts below for planning, then re-check status closer to departure.`,
+        'info'
+      );
+      renderFutureUnavailableState(selectedDateObj);
+      return;
+    }
+
+    const results = document.getElementById('results');
+    results.innerHTML = `<div class="state-box"><div class="spinner"></div><h3>Fetching live flight data...</h3><p>Querying AviationStack for all routes...</p></div>`;
+
+    const data = await fetchLiveData(apiKey, dateIdx, dateMode);
+    const liveRoutes = Object.keys(data).filter(code => data[code]?.isLive);
+    const missingRoutes = Object.keys(ROUTES).filter(code => !data[code]?.isLive);
+
+    if (!liveRoutes.length) {
+      const firstError = Object.values(data).find(d => d.error)?.error || 'No live flight data returned.';
+      showApiError(firstError);
+      renderOfficialStrategy(
+        'No Live API Data Returned',
+        `AviationStack did not return live data for ${formatDisplayDate(selectedDateObj)}. Use the official airline and airport sources below instead.`,
+        'No live API data',
+        false
+      );
+      return;
+    }
+
+    if (missingRoutes.length) {
+      showApiBanner(
+        'Partial Results',
+        `${missingRoutes.length} route(s) did not return live data and were omitted from the results.`,
+        'info'
+      );
+    }
+
+    updateLastUpdated('🟢 LIVE DATA');
+    renderResults(data);
+  } catch (err) {
+    showApiError(err?.message || 'Unexpected error while fetching flights');
+    renderOfficialStrategy(
+      'Official Source Fallback',
+      'The paid API request failed. Use the official airline and airport sources below instead of any placeholder data.',
+      'API error fallback',
+      false
+    );
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+async function fetchFlightData(flightIata, apiKey, dateMode, dateStr) {
+  const params = new URLSearchParams({
+    access_key: apiKey,
+    flight_iata: flightIata,
+    limit: '1'
+  });
+
+  if (dateMode === 'past') {
+    params.set('flight_date', dateStr);
+  }
+
+  const response = await fetch(`https://api.aviationstack.com/v1/flights?${params.toString()}`);
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    const parseError = new Error('AviationStack returned a non-JSON response');
+    parseError.status = response.status;
+    throw parseError;
+  }
+
+  if (!response.ok || payload?.error) {
+    const apiError = new Error(payload?.error?.message || `AviationStack request failed with status ${response.status}`);
+    apiError.apiCode = payload?.error?.code || null;
+    apiError.status = response.status;
+    throw apiError;
+  }
+
+  return payload;
+}
+
+async function fetchLiveData(apiKey, dateIdx, dateMode) {
+  const d = dates[dateIdx] || dates[Math.min(3, Math.max(dates.length - 1, 0))];
+  const dateStr = formatApiDate(d.date);
+  const data = {};
+
+  for (const code of Object.keys(ROUTES)) {
+    const route = ROUTES[code];
+    try {
+      const [d1, d2] = await Promise.all([
+        fetchFlightData(route.legs[0].flightNum, apiKey, dateMode, dateStr),
+        fetchFlightData(route.legs[1].flightNum, apiKey, dateMode, dateStr)
+      ]);
+
+      if (!d1 || d1.error) throw new Error(d1?.error?.info || 'No data returned for leg 1');
+      if (!d2 || d2.error) throw new Error(d2?.error?.info || 'No data returned for leg 2');
+
+      const f1 = d1.data?.[0];
+      const f2 = d2?.data?.[0];
+      if (!f1 || !f2) throw new Error('Flight data missing for one or more legs');
+
+      data[code] = {
+        leg1Status: mapStatus(f1?.flight_status),
+        leg1Delay: f1?.departure?.delay || 0,
+        leg1DepActual: f1?.departure?.actual || f1?.departure?.estimated || null,
+        leg1ArrActual: f1?.arrival?.actual || f1?.arrival?.estimated || null,
+        leg2Status: mapStatus(f2?.flight_status),
+        leg2Delay: f2?.departure?.delay || 0,
+        leg2DepActual: f2?.departure?.actual || f2?.departure?.estimated || null,
+        leg2ArrActual: f2?.arrival?.actual || f2?.arrival?.estimated || null,
+        isLive: true
+      };
+    } catch(e) {
+      if (e?.status === 401 || e?.status === 429 || /access|rate|limit/i.test(e?.apiCode || '')) {
+        throw e;
+      }
+      data[code] = { isLive: false, error: e.message };
+    }
+  }
+  return data;
+}
+
+function showApiError(msg) {
+  showApiBanner(
+    '⚠️ API Error',
+    `${msg}<br><br>
+    Common causes: invalid key, plan limits for <code>flight_date</code> on past days, rate limiting, or the flight not being available for the selected day.<br>
+    Check your key at <a href="https://aviationstack.com/dashboard" target="_blank" style="color:#00d4ff;">aviationstack.com/dashboard</a> and make sure it's active.`
+  );
+}
+
+function mapStatus(s) {
+  if (!s) return 'scheduled';
+  if (s === 'active' || s === 'landed') return 'on-time';
+  if (s === 'cancelled') return 'cancelled';
+  if (s === 'delayed') return 'delayed';
+  if (s === 'scheduled') return 'scheduled';
+  return 'unknown';
+}
+
+// Init
+window.onload = () => {
+  dates = generateDates();
+  selectedDate = getSelectedDateIndex();
+  renderDateStrip();
+
+  // Restore API key into input box
+  const saved = getStoredApiKey();
+  if (saved) {
+    document.getElementById('apiKey').value = saved;
+  }
+
+  if (getDateMode(dates[selectedDate].date) === 'future') {
+    showApiBanner(
+      'Date Note',
+      `Free data sources do not expose reliable future flight status for <strong>${formatDisplayDate(dates[selectedDate].date)}</strong>. Use the official airline alerts below for planning.`,
+      'info'
+    );
+    renderFutureUnavailableState(dates[selectedDate].date);
+    return;
+  }
+
+  if (saved) {
+    fetchData();
+    return;
+  }
+
+  renderMissingKeyState(true);
+};
+</script>
+<script src="tracker-app.js"></script>
+</body>
+</html>
