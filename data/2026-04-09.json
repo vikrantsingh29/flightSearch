@@ -1,6 +1,6 @@
 {
   "ok": true,
-  "date": "2026-04-08",
+  "date": "2026-04-09",
   "source": "local-official-scraper",
   "automatedAirlines": [
     "EK",
@@ -14,8 +14,8 @@
     "EK": {
       "isLive": true,
       "source": "Emirates official flight status",
-      "requestedDate": "2026-04-08",
-      "resolvedDate": "2026-04-08",
+      "requestedDate": "2026-04-09",
+      "resolvedDate": "2026-04-09",
       "leg1FlightNumber": "EK565",
       "leg1Status": "scheduled",
       "leg1Delay": 0,
@@ -33,7 +33,7 @@
       "leg1TimeLeft": "03h 45m",
       "leg1RawStatus": "Scheduled",
       "leg1RawStatusCode": "PDEP",
-      "leg1SourceUrl": "https://www.emirates.com/us/english/manage-booking/flight-status/results/?origin=BLR&destination=DXB&date=2026-04-08&date-input0=Wednesday%2C+8+Apr+26",
+      "leg1SourceUrl": "https://www.emirates.com/us/english/manage-booking/flight-status/results/?origin=BLR&destination=DXB&date=2026-04-09&date-input0=Thursday%2C+9+Apr+26",
       "leg1Missing": false,
       "leg2FlightNumber": "EK047",
       "leg2Status": "scheduled",
@@ -52,7 +52,7 @@
       "leg2TimeLeft": "08h 05m",
       "leg2RawStatus": "Scheduled",
       "leg2RawStatusCode": "PDEP",
-      "leg2SourceUrl": "https://www.emirates.com/us/english/manage-booking/flight-status/results/?origin=DXB&destination=FRA&date=2026-04-08&date-input0=Wednesday%2C+8+Apr+26",
+      "leg2SourceUrl": "https://www.emirates.com/us/english/manage-booking/flight-status/results/?origin=DXB&destination=FRA&date=2026-04-09&date-input0=Thursday%2C+9+Apr+26",
       "leg2Missing": false,
       "layoverScheduledMinutes": 75,
       "layoverActualMinutes": 75,
