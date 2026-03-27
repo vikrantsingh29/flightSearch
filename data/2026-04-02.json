@@ -70,7 +70,7 @@
       "requestedDate": "2026-04-02",
       "resolvedDate": "2026-04-02",
       "leg1FlightNumber": "QR573",
-      "leg1Status": "scheduled",
+      "leg1Status": "cancelled",
       "leg1Delay": 0,
       "leg1DepActual": null,
       "leg1ArrActual": null,
@@ -84,8 +84,8 @@
       "leg1ArrLabel": "Scheduled arrival",
       "leg1Duration": "4h50m",
       "leg1TimeLeft": null,
-      "leg1RawStatus": "SCHEDULED",
-      "leg1RawStatusCode": "PDEP",
+      "leg1RawStatus": "CANCELLED",
+      "leg1RawStatusCode": "CNLD",
       "leg1SourceUrl": "https://fs.qatarairways.com/flightstatus/search",
       "leg1Missing": false,
       "leg2FlightNumber": "No connection",
@@ -113,7 +113,7 @@
       "connectionPossible": false,
       "connectionReason": "No DOH-FRA departure is published after QR573 arrives in Doha.",
       "notes": [
-        "QR573: SCHEDULED",
+        "QR573: CANCELLED",
         "No onward connection published",
         "Available DOH-FRA results: QR069 SCHEDULED"
       ]
@@ -129,6 +129,6 @@
       "error": "No free automated local scraper is implemented for AI yet."
     }
   },
-  "snapshotGeneratedAt": "2026-03-27T12:15:51.571Z",
+  "snapshotGeneratedAt": "2026-03-27T18:19:45.758Z",
   "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
 }
