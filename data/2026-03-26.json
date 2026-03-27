@@ -37,21 +37,21 @@
       "leg1Missing": false,
       "leg2FlightNumber": "EK047",
       "leg2Status": "delayed",
-      "leg2Delay": 82,
+      "leg2Delay": 72,
       "leg2DepActual": "15:01",
-      "leg2ArrActual": "20:42",
+      "leg2ArrActual": "20:32",
       "leg2ScheduledDep": "14:05",
       "leg2ScheduledArr": "19:20",
       "leg2EstimatedDep": "15:00",
-      "leg2EstimatedArr": "20:42",
+      "leg2EstimatedArr": "20:28",
       "leg2DepDisplay": "15:01",
-      "leg2ArrDisplay": "20:42",
+      "leg2ArrDisplay": "20:32",
       "leg2DepLabel": "Actual departure",
-      "leg2ArrLabel": "Estimated arrival",
+      "leg2ArrLabel": "Actual arrival",
       "leg2Duration": "08:15",
-      "leg2TimeLeft": "01h 19m",
-      "leg2RawStatus": "In flight",
-      "leg2RawStatusCode": "ENRT",
+      "leg2TimeLeft": null,
+      "leg2RawStatus": "Arrived",
+      "leg2RawStatusCode": "ARVD",
       "leg2SourceUrl": "https://www.emirates.com/us/english/manage-booking/flight-status/results/?origin=DXB&destination=FRA&date=2026-03-26&date-input0=Thursday%2C+26+Mar+26",
       "leg2Missing": false,
       "layoverScheduledMinutes": 65,
@@ -61,7 +61,7 @@
       "connectionReason": null,
       "notes": [
         "EK565: Arrived",
-        "EK047: In flight"
+        "EK047: Arrived"
       ]
     },
     "QR": {
@@ -129,6 +129,6 @@
       "error": "No free automated local scraper is implemented for AI yet."
     }
   },
-  "snapshotGeneratedAt": "2026-03-26T18:22:31.574Z",
+  "snapshotGeneratedAt": "2026-03-27T00:25:41.600Z",
   "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
 }

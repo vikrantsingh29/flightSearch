@@ -71,15 +71,15 @@
       "resolvedDate": "2026-03-27",
       "leg1FlightNumber": "QR573",
       "leg1Status": "delayed",
-      "leg1Delay": 4,
+      "leg1Delay": 6,
       "leg1DepActual": null,
-      "leg1ArrActual": "11:34",
+      "leg1ArrActual": "11:36",
       "leg1ScheduledDep": "09:25",
       "leg1ScheduledArr": "11:30",
       "leg1EstimatedDep": null,
-      "leg1EstimatedArr": "11:34",
+      "leg1EstimatedArr": "11:36",
       "leg1DepDisplay": "09:25",
-      "leg1ArrDisplay": "11:34",
+      "leg1ArrDisplay": "11:36",
       "leg1DepLabel": "Scheduled departure",
       "leg1ArrLabel": "Estimated arrival",
       "leg1Duration": "4h35m",
@@ -108,7 +108,7 @@
       "leg2SourceUrl": "https://fs.qatarairways.com/flightstatus/search",
       "leg2Missing": false,
       "layoverScheduledMinutes": 170,
-      "layoverActualMinutes": 166,
+      "layoverActualMinutes": 164,
       "minimumLayoverMinutes": 90,
       "connectionPossible": true,
       "connectionReason": null,
@@ -128,6 +128,6 @@
       "error": "No free automated local scraper is implemented for AI yet."
     }
   },
-  "snapshotGeneratedAt": "2026-03-26T18:22:31.574Z",
+  "snapshotGeneratedAt": "2026-03-27T00:25:41.600Z",
   "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
 }
