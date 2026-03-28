@@ -43,6 +43,19 @@
     z-index: 0;
   }
 
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(circle at 14% 18%, rgba(0,212,255,0.16), transparent 28%),
+      radial-gradient(circle at 84% 16%, rgba(255,107,53,0.14), transparent 22%),
+      radial-gradient(circle at 52% 78%, rgba(0,230,118,0.08), transparent 30%);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.9;
+  }
+
   .container { max-width: 1100px; margin: 0 auto; padding: 32px 20px; position: relative; z-index: 1; }
 
   header {
@@ -412,6 +425,461 @@
 
   .summary-chip .lbl { color: var(--muted); font-size: 11px; }
 
+  .flight-theater {
+    display: grid;
+    grid-template-columns: minmax(300px, 0.9fr) minmax(360px, 1.3fr);
+    gap: 20px;
+    margin-bottom: 28px;
+    padding: 22px;
+    border: 1px solid rgba(0,212,255,0.18);
+    border-radius: 24px;
+    background:
+      linear-gradient(135deg, rgba(0,212,255,0.08), rgba(6,10,18,0.94) 40%, rgba(255,107,53,0.06)),
+      rgba(13,20,32,0.88);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.32);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .flight-theater::before {
+    content: '';
+    position: absolute;
+    inset: auto -80px -140px auto;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.12), transparent 68%);
+    pointer-events: none;
+  }
+
+  .theater-copy,
+  .theater-stage {
+    position: relative;
+    z-index: 1;
+  }
+
+  .theater-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .theater-kicker,
+  .stage-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,212,255,0.24);
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .theater-copy h2 {
+    font-size: clamp(28px, 3.8vw, 44px);
+    line-height: 0.94;
+    letter-spacing: -0.04em;
+    max-width: 10ch;
+  }
+
+  .theater-description {
+    color: #c6d8f7;
+    font-size: 14px;
+    line-height: 1.8;
+    max-width: 48ch;
+  }
+
+  .theater-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .theater-stat {
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(7,12,21,0.7);
+    backdrop-filter: blur(12px);
+  }
+
+  .theater-stat .label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .theater-stat strong {
+    display: block;
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .theater-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .ghost-btn {
+    appearance: none;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.04);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 11px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  }
+
+  .ghost-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(0,212,255,0.32);
+    background: rgba(0,212,255,0.08);
+  }
+
+  .ghost-btn.accent {
+    border-color: rgba(255,107,53,0.28);
+    background: rgba(255,107,53,0.08);
+    color: #ffc3af;
+  }
+
+  .theater-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .stage-headline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .stage-headline strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 18px;
+    line-height: 1.35;
+  }
+
+  .stage-badge {
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: #c6d8f7;
+    font-size: 12px;
+    line-height: 1.5;
+    max-width: 220px;
+  }
+
+  .stage-surface {
+    position: relative;
+    height: 390px;
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background:
+      radial-gradient(circle at 20% 20%, rgba(0,212,255,0.14), transparent 20%),
+      radial-gradient(circle at 78% 18%, rgba(255,107,53,0.12), transparent 20%),
+      linear-gradient(180deg, rgba(8,13,22,0.98), rgba(10,17,28,0.92));
+    overflow: hidden;
+  }
+
+  #routeExperience,
+  #layoverPulse {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .route-tooltip {
+    position: absolute;
+    min-width: 220px;
+    max-width: 280px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(6,10,18,0.94);
+    box-shadow: 0 22px 44px rgba(0,0,0,0.42);
+    pointer-events: none;
+    z-index: 4;
+    color: var(--text);
+  }
+
+  .route-tooltip[hidden] { display: none; }
+
+  .route-tooltip .eyebrow {
+    display: inline-flex;
+    margin-bottom: 8px;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .route-tooltip strong {
+    display: block;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .route-tooltip p,
+  .route-tooltip .meta {
+    font-size: 12px;
+    line-height: 1.6;
+    color: #c6d8f7;
+  }
+
+  .route-tooltip .meta {
+    margin-top: 8px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .signal-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(220px, 0.9fr);
+    gap: 14px;
+  }
+
+  .signal-card {
+    min-height: 188px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(7,12,21,0.72);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .signal-label {
+    margin-bottom: 12px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .signal-copy {
+    color: #c6d8f7;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+
+  .signal-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .signal-tags span {
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,212,255,0.2);
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+  }
+
+  .route-orbit,
+  .route-grid-line {
+    fill: none;
+    stroke: rgba(255,255,255,0.08);
+    stroke-width: 1;
+    stroke-dasharray: 5 10;
+  }
+
+  .route-group {
+    cursor: pointer;
+    transition: opacity 0.25s ease;
+  }
+
+  .route-group.is-dimmed,
+  .chart-bar.is-dimmed {
+    opacity: 0.22;
+  }
+
+  .route-group.is-active .route-track,
+  .route-group.is-active .route-dash {
+    stroke-width: 4;
+  }
+
+  .route-group.is-active .route-label-badge {
+    stroke: rgba(0,212,255,0.4);
+  }
+
+  .route-glow {
+    fill: none;
+    stroke-width: 12;
+    opacity: 0.2;
+    stroke-linecap: round;
+  }
+
+  .route-track {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+
+  .route-dash {
+    fill: none;
+    stroke: rgba(255,255,255,0.28);
+    stroke-width: 1.25;
+    stroke-dasharray: 5 10;
+    stroke-linecap: round;
+  }
+
+  .route-hitbox {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 20;
+  }
+
+  .route-label-badge {
+    fill: rgba(6,10,18,0.88);
+    stroke: rgba(255,255,255,0.08);
+  }
+
+  .route-label-text {
+    fill: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+
+  .route-label-sub {
+    fill: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+  }
+
+  .airport-node { cursor: grab; }
+  .airport-node.fixed { cursor: default; }
+
+  .airport-node text {
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .airport-ring {
+    fill: none;
+    stroke: rgba(255,255,255,0.12);
+    stroke-dasharray: 3 8;
+  }
+
+  .airport-pulse {
+    fill: none;
+    stroke: rgba(0,212,255,0.2);
+    stroke-width: 1.5;
+  }
+
+  .airport-core {
+    stroke: rgba(255,255,255,0.12);
+    stroke-width: 1.5;
+  }
+
+  .airport-code {
+    fill: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 800;
+    text-anchor: middle;
+  }
+
+  .airport-city {
+    fill: var(--muted);
+    font-size: 11px;
+    text-anchor: middle;
+  }
+
+  .chart-grid line {
+    stroke: rgba(255,255,255,0.08);
+    stroke-dasharray: 4 8;
+  }
+
+  .chart-axis text {
+    fill: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+  }
+
+  .chart-axis path,
+  .chart-axis line {
+    stroke: rgba(255,255,255,0.1);
+  }
+
+  .chart-bar {
+    cursor: pointer;
+    transition: opacity 0.25s ease;
+  }
+
+  .chart-bar-fill {
+    stroke: rgba(255,255,255,0.08);
+    stroke-width: 1;
+  }
+
+  .chart-bar-value,
+  .chart-bar-state {
+    font-family: 'Space Mono', monospace;
+    text-anchor: middle;
+  }
+
+  .chart-bar-value {
+    fill: var(--text);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .chart-bar-state {
+    fill: var(--muted);
+    font-size: 10px;
+  }
+
+  .journey-card.route-focused,
+  .strategy-card.route-focused,
+  .tab.route-focused {
+    border-color: rgba(0,212,255,0.45);
+    box-shadow: 0 0 0 1px rgba(0,212,255,0.16), 0 22px 46px rgba(0,0,0,0.18);
+  }
+
+  .staged-card,
+  .staged-metric {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+    transition:
+      opacity 0.55s ease,
+      transform 0.55s ease,
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
+    transition-delay: var(--stagger-delay, 0ms);
+  }
+
+  .staged-card.is-visible,
+  .staged-metric.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
   .no-flights {
     text-align: center;
     padding: 60px 20px;
@@ -530,7 +998,26 @@
   .leg-divider hr { flex: 1; border: none; border-top: 1px solid var(--border); }
   .leg-label { font-size: 10px; font-family: 'Space Mono', monospace; color: var(--muted); background: var(--surface2); padding: 2px 10px; border-radius: 10px; border: 1px solid var(--border); }
 
+  @media (max-width: 960px) {
+    .flight-theater {
+      grid-template-columns: 1fr;
+    }
+
+    .theater-copy h2 {
+      max-width: none;
+    }
+
+    .signal-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   @media (max-width: 600px) {
+    .flight-theater { padding: 16px; border-radius: 20px; }
+    .theater-metrics { grid-template-columns: 1fr; }
+    .stage-headline { flex-direction: column; }
+    .stage-badge { max-width: none; width: 100%; }
+    .stage-surface { height: 320px; }
     .journey-top { padding: 16px; }
     .flight-seg .iata { font-size: 22px; }
     .flight-seg .time { font-size: 16px; }
@@ -571,25 +1058,80 @@
     </div>
   </div>
 
+  <section class="flight-theater" aria-labelledby="experienceHeading">
+    <div class="theater-copy">
+      <span class="theater-kicker">D3 Route Theater</span>
+      <h2 id="experienceHeading">Drag hubs. Trace corridors. Stress-test each connection.</h2>
+      <p class="theater-description" id="experienceNarrative">The route theater mirrors the live dashboard. Hover a corridor for a quick read, drag hub nodes to reshape the map, or click a route to focus one airline.</p>
+      <div class="theater-metrics">
+        <div class="theater-stat">
+          <span class="label">Focus</span>
+          <strong id="experienceFocus">All airlines</strong>
+        </div>
+        <div class="theater-stat">
+          <span class="label">Coverage</span>
+          <strong id="experienceCoverage">Waiting for official feed</strong>
+        </div>
+        <div class="theater-stat">
+          <span class="label">Risk Mix</span>
+          <strong id="experienceRiskMix">No routes evaluated yet</strong>
+        </div>
+      </div>
+      <div class="theater-actions">
+        <button class="ghost-btn" type="button" onclick="resetExperienceLayout()">Reset route layout</button>
+        <button class="ghost-btn accent" type="button" onclick="setAirline('all')">Show all airlines</button>
+      </div>
+    </div>
+    <div class="theater-stage">
+      <div class="stage-headline">
+        <div>
+          <span class="stage-kicker">Interactive Air Corridor</span>
+          <strong id="stageStatus">Hover a path to inspect timing pressure.</strong>
+        </div>
+        <div class="stage-badge" id="stageBadge">Click any route to sync the filter tabs and cards below.</div>
+      </div>
+      <div class="stage-surface" id="routeStageSurface">
+        <svg id="routeExperience" aria-label="Interactive airline route map"></svg>
+        <div class="route-tooltip" id="routeTooltip" hidden></div>
+      </div>
+      <div class="signal-grid">
+        <div class="signal-card">
+          <div class="signal-label">Connection Pressure</div>
+          <svg id="layoverPulse" aria-label="Layover comparison chart"></svg>
+        </div>
+        <div class="signal-card">
+          <div class="signal-label">Interaction Guide</div>
+          <div class="signal-copy" id="interactionGuide">Hover lines for details, drag hub nodes to remix the network, and click a corridor to focus a single airline.</div>
+          <div class="signal-tags" id="interactionTags">
+            <span>Hover</span>
+            <span>Click</span>
+            <span>Drag</span>
+            <span>Filter</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Airline tabs -->
   <div class="airline-tabs">
-    <div class="tab active" onclick="setAirline('all')">
+    <div class="tab active" data-airline="all" onclick="setAirline('all')">
       <span class="airline-dot" style="background:#00d4ff"></span>
       All Airlines
     </div>
-    <div class="tab" onclick="setAirline('EK')">
+    <div class="tab" data-airline="EK" onclick="setAirline('EK')">
       <span class="airline-dot" style="background:#d4a843"></span>
       Emirates · DXB
     </div>
-    <div class="tab" onclick="setAirline('QR')">
+    <div class="tab" data-airline="QR" onclick="setAirline('QR')">
       <span class="airline-dot" style="background:#8b1a2a"></span>
       Qatar Airways · DOH
     </div>
-    <div class="tab" onclick="setAirline('GF')">
+    <div class="tab" data-airline="GF" onclick="setAirline('GF')">
       <span class="airline-dot" style="background:#c2002f"></span>
       Gulf Air · BAH
     </div>
-    <div class="tab" onclick="setAirline('AI')">
+    <div class="tab" data-airline="AI" onclick="setAirline('AI')">
       <span class="airline-dot" style="background:#e05a11"></span>
       Air India · Various
     </div>
@@ -1260,6 +1802,7 @@ window.onload = () => {
   renderMissingKeyState(true);
 };
 </script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script src="tracker-app.js"></script>
 </body>
 </html>
