@@ -46,8 +46,8 @@ const ROUTES = {
       statusUrl: 'https://www.gulfair.com/flying-with-us/before-you-travel/flight-status',
       updatesUrl: 'https://www.gulfair.com/en/',
       airportUrl: 'https://www.frankfurt-airport.com/en/flights-and-transfer/arrivals.html/',
-      statusHint: 'Gulf Air exposes a public flight-status form on its website.',
-      strategyHint: 'Use Gulf Air flight status for both legs, then verify the Frankfurt arrival board for GF004.'
+      statusHint: 'Gulf Air exposes official status and booking tools, but its live booking app is protected by bot checks that block helper-side fare scraping.',
+      strategyHint: 'Open the official Gulf Air status page for live ops, then use the prefilled booking search below for fare checks in a real browser session.'
     }
   },
   AI: {
@@ -63,8 +63,8 @@ const ROUTES = {
       statusUrl: 'https://www.airindia.com/in/en/manage/flight-status.html',
       updatesUrl: 'https://www.airindia.com/in/en/middle-east-travel-updates.html',
       airportUrl: 'https://www.frankfurt-airport.com/en/flights-and-transfer/arrivals.html/',
-      statusHint: 'Air India exposes status only in a narrow date window, so the airline page is the source to check near departure.',
-      strategyHint: 'Outside the small public window, use network updates and then re-check the official status page when the date gets closer.'
+      statusHint: 'Air India exposes status only in a narrow date window, but its India route pages publish BLR-FRA fare pages in INR.',
+      strategyHint: 'Use the India fare page for pricing context, then re-check Air India flight status closer to departure because live status appears only near travel date.'
     }
   }
 };
@@ -158,6 +158,10 @@ function formatApiDate(date) {
   return `${year}-${month}-${day}`;
 }
 
+function formatCompactApiDate(date) {
+  return formatApiDate(date).replace(/-/g, '');
+}
+
 function formatDisplayDate(date) {
   return date.toLocaleDateString(undefined, {
     year: 'numeric',
@@ -166,7 +170,7 @@ function formatDisplayDate(date) {
   });
 }
 
-function buildBookingUrl(code, date) {
+function buildBookingMeta(code, date) {
   const apiDate = formatApiDate(date);
 
   if (code === 'QR') {
@@ -189,10 +193,46 @@ function buildBookingUrl(code, date) {
       flexibleDate: 'off',
       allowRedemption: 'N'
     });
-    return `https://www.qatarairways.com/app/booking/flight-selection?${params.toString()}`;
+    return {
+      url: `https://www.qatarairways.com/app/booking/flight-selection?${params.toString()}`,
+      label: 'Open booking fares',
+      note: null
+    };
   }
 
-  return null;
+  if (code === 'GF') {
+    const params = new URLSearchParams({
+      adt: '1',
+      chd: '0',
+      tnn: '0',
+      inf: '0',
+      flight_type: 'single',
+      origin: 'BLR',
+      destination: 'FRA',
+      departure_date: formatCompactApiDate(date),
+      cabin_class: 'A'
+    });
+
+    return {
+      url: `https://flights.gulfair.com/flights?${params.toString()}`,
+      label: 'Open fare search',
+      note: 'Gulf Air accepts a prefilled BLR to FRA search, but automated fare retrieval still hits the airline bot-verification wall.'
+    };
+  }
+
+  if (code === 'AI') {
+    return {
+      url: 'https://www.airindia.com/en-in/book-flights/bangalore-to-frankfurt-flights',
+      label: 'Open INR fares',
+      note: 'Air India publishes BLR to FRA route-fare pages in the India storefront with INR pricing snapshots.'
+    };
+  }
+
+  return {
+    url: null,
+    label: 'Open booking fares',
+    note: null
+  };
 }
 
 function updateLastUpdated(label) {
@@ -319,9 +359,9 @@ function buildStrategyCards(codes = getVisibleAirlineCodes()) {
   return codes.map(code => {
     const route = ROUTES[code];
     const official = route.official || {};
-    const bookingUrl = buildBookingUrl(code, selectedDateObj);
+    const booking = buildBookingMeta(code, selectedDateObj);
     const timingNote = dateMode === 'future'
-      ? bookingUrl
+      ? booking.url
         ? 'Use the airline booking page for future schedule and fare visibility, then re-check the public status tool closer to departure.'
         : 'Use the airline schedule and travel-alert pages now, then re-check the public status tool closer to departure.'
       : dateMode === 'past'
@@ -336,11 +376,12 @@ function buildStrategyCards(codes = getVisibleAirlineCodes()) {
         <ul class="strategy-list">
           <li>${official.strategyHint || ''}</li>
           <li>${timingNote}</li>
+          ${booking.note ? `<li>${booking.note}</li>` : ''}
           <li>Selected date: ${formatDisplayDate(selectedDateObj)}</li>
         </ul>
         <div class="strategy-actions">
           <a class="strategy-link" href="${official.statusUrl || '#'}" target="_blank" rel="noopener noreferrer">Open airline status</a>
-          ${bookingUrl ? `<a class="strategy-link alt" href="${bookingUrl}" target="_blank" rel="noopener noreferrer">Open booking fares</a>` : ''}
+          ${booking.url ? `<a class="strategy-link alt" href="${booking.url}" target="_blank" rel="noopener noreferrer">${booking.label}</a>` : ''}
           <a class="strategy-link alt" href="${official.updatesUrl || '#'}" target="_blank" rel="noopener noreferrer">Open travel updates</a>
           <a class="strategy-link" href="${official.airportUrl || '#'}" target="_blank" rel="noopener noreferrer">Open FRA arrivals</a>
         </div>

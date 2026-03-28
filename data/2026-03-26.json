@@ -65,70 +65,22 @@
       ]
     },
     "QR": {
-      "isLive": true,
-      "source": "Qatar Airways official flight status",
-      "requestedDate": "2026-03-26",
-      "resolvedDate": "2026-03-26",
-      "leg1FlightNumber": "QR573",
-      "leg1Status": "delayed",
-      "leg1Delay": 36,
-      "leg1DepActual": "09:25",
-      "leg1ArrActual": "12:06",
-      "leg1ScheduledDep": "09:25",
-      "leg1ScheduledArr": "11:30",
-      "leg1EstimatedDep": null,
-      "leg1EstimatedArr": "11:56",
-      "leg1DepDisplay": "09:25",
-      "leg1ArrDisplay": "12:06",
-      "leg1DepLabel": "Actual departure",
-      "leg1ArrLabel": "Actual arrival",
-      "leg1Duration": "4h35m",
-      "leg1TimeLeft": null,
-      "leg1RawStatus": "ARRIVED",
-      "leg1RawStatusCode": "ARVD",
-      "leg1SourceUrl": "https://fs.qatarairways.com/flightstatus/search",
-      "leg1Missing": false,
-      "leg2FlightNumber": "No connection",
-      "leg2Status": "unknown",
-      "leg2Delay": 0,
-      "leg2DepActual": null,
-      "leg2ArrActual": null,
-      "leg2ScheduledDep": null,
-      "leg2ScheduledArr": null,
-      "leg2EstimatedDep": null,
-      "leg2EstimatedArr": null,
-      "leg2DepDisplay": null,
-      "leg2ArrDisplay": null,
-      "leg2DepLabel": "No departure",
-      "leg2ArrLabel": "No arrival",
-      "leg2Duration": null,
-      "leg2TimeLeft": null,
-      "leg2RawStatus": "No viable onward flight published",
-      "leg2RawStatusCode": null,
-      "leg2SourceUrl": null,
-      "leg2Missing": true,
-      "layoverScheduledMinutes": null,
-      "layoverActualMinutes": 0,
-      "minimumLayoverMinutes": 90,
-      "connectionPossible": false,
-      "connectionReason": "No DOH-FRA departure is published after QR573 arrives in Doha.",
-      "notes": [
-        "QR573: ARRIVED",
-        "No onward connection published",
-        "Available DOH-FRA results: QR067 CANCELLED"
-      ]
+      "isLive": false,
+      "error": "Qatar Airways did not publish BLR-DOH flight-status results for the requested date.",
+      "code": "tracked_flights_missing",
+      "source": "Qatar Airways official flight status"
     },
     "GF": {
       "isLive": false,
       "unsupported": true,
-      "error": "No free automated local scraper is implemented for GF yet."
+      "error": "Gulf Air still needs browser-based checking. Its official booking app accepts a prefilled BLR to FRA search, but helper-side fare scraping is blocked by the airline bot check."
     },
     "AI": {
       "isLive": false,
       "unsupported": true,
-      "error": "No free automated local scraper is implemented for AI yet."
+      "error": "Air India now exposes official INR route-fare pages and an authenticated status flow, but the BLR to FRA feeder-flight mapping in this tracker still needs a refresh before live automation can be switched on safely."
     }
   },
-  "snapshotGeneratedAt": "2026-03-28T20:43:29.584Z",
+  "snapshotGeneratedAt": "2026-03-28T21:28:02.521Z",
   "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
 }
