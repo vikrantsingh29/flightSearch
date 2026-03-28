@@ -77,6 +77,21 @@ const STATIC_DATA_BASE = window.TRACKER_DATA_BASE || './data';
 const TRACKER_PAGES_URL = window.TRACKER_PAGES_URL || 'https://vikrantsingh29.github.io/flightSearch/';
 const NO_CHANCE_LAYOVER_MINUTES = 60;
 const RISKY_LAYOVER_MINUTES = 120;
+const AIRPORT_META = {
+  BLR: { city: 'Bengaluru', fixed: true },
+  DXB: { city: 'Dubai', fixed: false },
+  DOH: { city: 'Doha', fixed: false },
+  BAH: { city: 'Bahrain', fixed: false },
+  DEL: { city: 'Delhi', fixed: false },
+  FRA: { city: 'Frankfurt', fixed: true }
+};
+const EXPERIENCE_TONE_COLORS = {
+  healthy: '#00e676',
+  risky: '#ffd740',
+  blocked: '#ff4444',
+  manual: '#8deaff',
+  pending: '#5c7094'
+};
 let helperAutomatedCodes = ['EK', 'QR'];
 let helperManualCodes = ['GF', 'AI'];
 
@@ -85,6 +100,19 @@ let selectedDate = null;
 let dates = [];
 let currentData = null;
 let activeFetchToken = 0;
+let pendingAirlineScroll = null;
+let routeResizeFrame = null;
+const experienceState = {
+  initialized: false,
+  resizeBound: false,
+  hoverCode: null,
+  nodePositions: {},
+  svg: null,
+  routeRecords: [],
+  airportData: [],
+  width: 0,
+  height: 0
+};
 
 function generateDates() {
   const list = [];
@@ -279,6 +307,9 @@ function renderStateBox(title, message, icon = '✈️', clearErrors = false, la
     </div>
   `;
   updateLastUpdated(label);
+  animateStagedElements();
+  scrollToPendingAirline();
+  syncInteractiveExperience();
 }
 
 function buildStrategyCards(codes = getVisibleAirlineCodes()) {
@@ -298,7 +329,7 @@ function buildStrategyCards(codes = getVisibleAirlineCodes()) {
         : 'Check the airline status page first, then confirm the last leg against Frankfurt arrivals.';
 
     return `
-      <div class="strategy-card">
+      <div class="strategy-card staged-card" data-airline="${code}">
         <h4>${route.name}</h4>
         <div class="meta">${route.legs[0].flightNum} · ${route.legs[1].flightNum} · via ${route.hub}</div>
         <p>${official.statusHint || ''}</p>
@@ -352,6 +383,9 @@ function renderOfficialStrategy(title, message, label = 'Official-source plan', 
   `;
 
   updateLastUpdated(label);
+  animateStagedElements();
+  scrollToPendingAirline();
+  syncInteractiveExperience();
 }
 
 function renderDateStrip() {
@@ -382,17 +416,16 @@ function selectDate(index) {
   selectedDate = index;
   renderDateStrip();
   clearApiErrors();
+  syncInteractiveExperience();
   fetchData();
 }
 
 function setAirline(code) {
   selectedAirline = code;
-  document.querySelectorAll('.tab').forEach((tab, index) => {
-    tab.classList.remove('active');
-    if ((['all', 'EK', 'QR', 'GF', 'AI'][index]) === code) {
-      tab.classList.add('active');
-    }
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.airline === code);
   });
+  syncInteractiveExperience();
   fetchData();
 }
 
@@ -584,7 +617,7 @@ function renderResults(data) {
       : `layover at ${route.hub} · <60m: No chance · 60-120m: Risky · ${layoverLabel}`;
 
     html += `
-      <div class="journey-card ${cardClass}">
+      <div class="journey-card ${cardClass} staged-card" data-airline="${code}">
         <div class="journey-top">
           <div style="display:flex;align-items:center;gap:10px;width:100%;">
             <div style="width:36px;height:36px;border-radius:9px;background:${route.color}22;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:${route.color};font-family:'Space Mono',monospace;flex-shrink:0;">${code}</div>
@@ -665,11 +698,733 @@ function renderResults(data) {
   results.innerHTML = html;
 
   document.getElementById('summaryBar').innerHTML = `
-    <div class="summary-chip"><div><div class="val" style="color:var(--green)">${feasible}</div><div class="lbl">Feasible</div></div></div>
-    <div class="summary-chip"><div><div class="val" style="color:var(--yellow)">${risky}</div><div class="lbl">Risky</div></div></div>
-    <div class="summary-chip"><div><div class="val" style="color:var(--red)">${blocked}</div><div class="lbl">Cancelled/Miss</div></div></div>
-    <div class="summary-chip"><div><div class="val" style="color:var(--accent)">${liveCodes.length}</div><div class="lbl">Routes checked</div></div></div>
+    <div class="summary-chip staged-metric"><div><div class="val" data-target="${feasible}" style="color:var(--green)">0</div><div class="lbl">Feasible</div></div></div>
+    <div class="summary-chip staged-metric"><div><div class="val" data-target="${risky}" style="color:var(--yellow)">0</div><div class="lbl">Risky</div></div></div>
+    <div class="summary-chip staged-metric"><div><div class="val" data-target="${blocked}" style="color:var(--red)">0</div><div class="lbl">Cancelled/Miss</div></div></div>
+    <div class="summary-chip staged-metric"><div><div class="val" data-target="${liveCodes.length}" style="color:var(--accent)">0</div><div class="lbl">Routes checked</div></div></div>
   `;
+
+  animateStagedElements();
+  scrollToPendingAirline();
+  syncInteractiveExperience();
+}
+
+function getRouteOutcome(code, liveRecord) {
+  const layover = calcLayover(code, liveRecord || {});
+  const layoverMinutes =
+    layover.actual !== null && layover.actual !== undefined ? layover.actual : layover.scheduled;
+
+  if (!liveRecord?.isLive) {
+    return {
+      tone: isLocallyAutomated(code) ? 'pending' : 'manual',
+      label: isLocallyAutomated(code) ? 'Awaiting result' : 'Manual check',
+      layoverMinutes
+    };
+  }
+
+  if (liveRecord.leg1Status === 'cancelled' || liveRecord.leg2Status === 'cancelled') {
+    return { tone: 'blocked', label: 'Cancelled', layoverMinutes };
+  }
+
+  if (liveRecord.connectionPossible === false) {
+    return { tone: 'blocked', label: 'No connection', layoverMinutes };
+  }
+
+  if (layoverMinutes !== null && layoverMinutes < NO_CHANCE_LAYOVER_MINUTES) {
+    return { tone: 'blocked', label: 'No chance', layoverMinutes };
+  }
+
+  if (layoverMinutes !== null && layoverMinutes <= RISKY_LAYOVER_MINUTES) {
+    return { tone: 'risky', label: 'Risky', layoverMinutes };
+  }
+
+  return { tone: 'healthy', label: 'Feasible', layoverMinutes };
+}
+
+function getOutcomeToneColor(tone, fallbackColor = EXPERIENCE_TONE_COLORS.pending) {
+  return EXPERIENCE_TONE_COLORS[tone] || fallbackColor;
+}
+
+function getStageActiveCode() {
+  return experienceState.hoverCode || (selectedAirline !== 'all' ? selectedAirline : null);
+}
+
+function getBarLayoverValue(record) {
+  const value = record.outcome?.layoverMinutes;
+  if (value !== null && value !== undefined) {
+    return Math.max(0, value);
+  }
+
+  return MIN_LAYOVER[record.code] || 90;
+}
+
+function buildExperienceRecords() {
+  const selectedDateLabel = formatDisplayDate(getSelectedDateObject());
+
+  return Object.keys(ROUTES).map((code, index) => {
+    const route = ROUTES[code];
+    const live = currentData?.[code] || null;
+    const outcome = getRouteOutcome(code, live);
+    const coverage = live?.isLive
+      ? 'Live official feed'
+      : isLocallyAutomated(code)
+        ? isStaticPagesMode()
+          ? 'Snapshot or public result missing'
+          : 'Waiting for a public result'
+        : 'Manual official-source links';
+    const delayPeak = Math.max(live?.leg1Delay || 0, live?.leg2Delay || 0);
+
+    return {
+      code,
+      index,
+      route,
+      live,
+      outcome,
+      selectedDateLabel,
+      coverage,
+      visible: selectedAirline === 'all' || selectedAirline === code,
+      delayPeak,
+      note:
+        live?.notes?.join(' / ') ||
+        route.official?.strategyHint ||
+        route.official?.statusHint ||
+        'Open the official airline page for the full source view.'
+    };
+  });
+}
+
+function getDefaultAirportPositions(width, height) {
+  if (width < 560) {
+    return {
+      BLR: { x: width * 0.16, y: height * 0.55 },
+      DXB: { x: width * 0.42, y: height * 0.18 },
+      DOH: { x: width * 0.58, y: height * 0.36 },
+      BAH: { x: width * 0.42, y: height * 0.66 },
+      DEL: { x: width * 0.58, y: height * 0.84 },
+      FRA: { x: width * 0.84, y: height * 0.55 }
+    };
+  }
+
+  return {
+    BLR: { x: width * 0.11, y: height * 0.54 },
+    DXB: { x: width * 0.44, y: height * 0.18 },
+    DOH: { x: width * 0.53, y: height * 0.34 },
+    BAH: { x: width * 0.47, y: height * 0.67 },
+    DEL: { x: width * 0.6, y: height * 0.82 },
+    FRA: { x: width * 0.89, y: height * 0.54 }
+  };
+}
+
+function clampExperienceNodePosition(code, defaults, width, height) {
+  const base = defaults[code];
+  const source = AIRPORT_META[code]?.fixed ? base : experienceState.nodePositions[code] || base;
+  const padding = 26;
+
+  return {
+    x: Math.min(width - padding, Math.max(padding, source.x)),
+    y: Math.min(height - padding, Math.max(padding, source.y))
+  };
+}
+
+function initializeExperienceScene() {
+  if (experienceState.initialized) return;
+
+  experienceState.initialized = true;
+
+  if (!experienceState.resizeBound) {
+    window.addEventListener('resize', () => {
+      if (routeResizeFrame) {
+        window.cancelAnimationFrame(routeResizeFrame);
+      }
+
+      routeResizeFrame = window.requestAnimationFrame(() => {
+        renderRouteExperience();
+        renderLayoverPulse();
+      });
+    });
+    experienceState.resizeBound = true;
+  }
+}
+
+function resetExperienceLayout() {
+  experienceState.nodePositions = {};
+  hideRouteTooltip();
+  renderRouteExperience();
+  renderLayoverPulse();
+  updateExperienceCopy();
+  applyExperienceFocusState();
+}
+
+function updateDomRouteFocus(code) {
+  document.querySelectorAll('.journey-card[data-airline], .strategy-card[data-airline], .tab[data-airline]')
+    .forEach(element => {
+      element.classList.toggle('route-focused', Boolean(code) && element.dataset.airline === code);
+    });
+}
+
+function applyExperienceFocusState() {
+  const activeCode = getStageActiveCode();
+
+  document.querySelectorAll('.route-group, .chart-bar').forEach(element => {
+    const code = element.getAttribute('data-airline');
+    element.classList.toggle('is-active', Boolean(activeCode) && code === activeCode);
+    element.classList.toggle('is-dimmed', Boolean(activeCode) && code !== activeCode);
+  });
+
+  updateDomRouteFocus(activeCode);
+}
+
+function updateExperienceCopy() {
+  const records = buildExperienceRecords();
+  const activeCode = getStageActiveCode();
+  const focusRecord = records.find(record => record.code === activeCode) || null;
+  const liveCount = records.filter(record => record.live?.isLive).length;
+  const counts = records.reduce((acc, record) => {
+    if (record.outcome.tone === 'healthy') acc.healthy += 1;
+    if (record.outcome.tone === 'risky') acc.risky += 1;
+    if (record.outcome.tone === 'blocked') acc.blocked += 1;
+    return acc;
+  }, { healthy: 0, risky: 0, blocked: 0 });
+  const focusEl = document.getElementById('experienceFocus');
+  const coverageEl = document.getElementById('experienceCoverage');
+  const riskMixEl = document.getElementById('experienceRiskMix');
+  const narrativeEl = document.getElementById('experienceNarrative');
+  const statusEl = document.getElementById('stageStatus');
+  const badgeEl = document.getElementById('stageBadge');
+  const guideEl = document.getElementById('interactionGuide');
+  const tagsEl = document.getElementById('interactionTags');
+
+  if (!focusEl || !coverageEl || !riskMixEl || !narrativeEl || !statusEl || !badgeEl || !guideEl || !tagsEl) {
+    return;
+  }
+
+  if (focusRecord) {
+    const layoverLabel = focusRecord.outcome.layoverMinutes !== null && focusRecord.outcome.layoverMinutes !== undefined
+      ? `${focusRecord.outcome.layoverMinutes}m layover`
+      : 'layover pending';
+    const delayLabel = focusRecord.live?.isLive
+      ? focusRecord.delayPeak > 0
+        ? `${focusRecord.delayPeak}m peak delay`
+        : 'No major delays'
+      : focusRecord.coverage;
+
+    focusEl.textContent = `${focusRecord.route.name} (${focusRecord.code})`;
+    narrativeEl.textContent =
+      `${focusRecord.route.name} via ${focusRecord.route.hub} on ${focusRecord.selectedDateLabel}: ` +
+      `${focusRecord.outcome.label.toLowerCase()} with ${layoverLabel}. ${focusRecord.note}`;
+    statusEl.textContent = `${focusRecord.route.name}: ${focusRecord.outcome.label} and ${layoverLabel}.`;
+    badgeEl.textContent = `${focusRecord.route.legs[0].flightNum} / ${focusRecord.route.legs[1].flightNum} | ${delayLabel}`;
+    guideEl.textContent = focusRecord.live?.isLive
+      ? `Click this corridor to filter the cards below, or drag ${focusRecord.route.hub} to reshape the scene while keeping the same live data.`
+      : `No live result is published for this route right now. Click to focus the airline and use the official links in the cards below.`;
+    tagsEl.innerHTML = `
+      <span>${focusRecord.outcome.label}</span>
+      <span>${layoverLabel}</span>
+      <span>${focusRecord.coverage}</span>
+    `;
+  } else {
+    focusEl.textContent = selectedAirline === 'all' ? 'All airlines' : ROUTES[selectedAirline].name;
+    narrativeEl.textContent =
+      `Tracking ${records.length} corridors for ${formatDisplayDate(getSelectedDateObject())}. ` +
+      `${liveCount} route${liveCount === 1 ? '' : 's'} currently has live official data; hover any path for status and connection pressure.`;
+    statusEl.textContent = liveCount
+      ? 'Live view ready: hover any corridor or click to focus an airline.'
+      : 'Hover a path to inspect timing pressure.';
+    badgeEl.textContent = `Visible routes: ${getVisibleAirlineCodes().length} | Live feeds: ${liveCount}`;
+    guideEl.textContent =
+      'The map and chart stay linked to the airline tabs below. Hover for detail, drag hubs to reshape the lanes, and click a corridor to filter the dashboard.';
+    tagsEl.innerHTML = `
+      <span>${liveCount} live</span>
+      <span>${counts.healthy} feasible</span>
+      <span>${counts.risky} tight</span>
+      <span>${counts.blocked} blocked</span>
+    `;
+  }
+
+  coverageEl.textContent = `${liveCount}/${records.length} live official feeds`;
+  riskMixEl.textContent = `${counts.healthy} feasible, ${counts.risky} tight, ${counts.blocked} blocked`;
+}
+
+function buildRouteTooltipMarkup(record) {
+  const layoverLabel = record.outcome.layoverMinutes !== null && record.outcome.layoverMinutes !== undefined
+    ? `${record.outcome.layoverMinutes}m`
+    : 'Pending';
+  const statusToneColor = getOutcomeToneColor(record.outcome.tone, record.route.color);
+
+  return `
+    <span class="eyebrow" style="color:${statusToneColor}">${record.route.name}</span>
+    <strong>${record.code} via ${record.route.hub}</strong>
+    <p>${record.outcome.label} on ${record.selectedDateLabel}. ${record.coverage}.</p>
+    <div class="meta">${record.route.legs[0].flightNum} / ${record.route.legs[1].flightNum} | ${layoverLabel} layover</div>
+  `;
+}
+
+function showRouteTooltip(event, record) {
+  const tooltip = document.getElementById('routeTooltip');
+  const stage = document.getElementById('routeStageSurface');
+
+  if (!tooltip || !stage || !window.d3) return;
+
+  tooltip.innerHTML = buildRouteTooltipMarkup(record);
+  tooltip.hidden = false;
+
+  const [pointerX, pointerY] = window.d3.pointer(event, stage);
+  const maxLeft = stage.clientWidth - tooltip.offsetWidth - 12;
+  const maxTop = stage.clientHeight - tooltip.offsetHeight - 12;
+
+  tooltip.style.left = `${Math.max(12, Math.min(maxLeft, pointerX + 16))}px`;
+  tooltip.style.top = `${Math.max(12, Math.min(maxTop, pointerY + 16))}px`;
+}
+
+function hideRouteTooltip() {
+  const tooltip = document.getElementById('routeTooltip');
+  if (!tooltip) return;
+  tooltip.hidden = true;
+}
+
+function handleExperienceRouteClick(code) {
+  if (selectedAirline === code) {
+    pendingAirlineScroll = null;
+    setAirline('all');
+    return;
+  }
+
+  pendingAirlineScroll = code;
+  setAirline(code);
+}
+
+function updateRouteExperienceGeometry(restartTokens = false) {
+  if (!window.d3 || !experienceState.svg) return;
+
+  const d3 = window.d3;
+  const routeLine = d3.line()
+    .x(point => point.x)
+    .y(point => point.y)
+    .curve(d3.curveCatmullRom.alpha(0.72));
+  const airportLookup = Object.fromEntries(
+    experienceState.airportData.map(airport => [airport.code, airport])
+  );
+
+  experienceState.routeRecords.forEach(record => {
+    const laneOffset = (record.index - ((experienceState.routeRecords.length - 1) / 2)) * 24;
+    const start = {
+      x: airportLookup.BLR.x,
+      y: airportLookup.BLR.y + laneOffset * 0.32
+    };
+    const hub = airportLookup[record.route.hub];
+    const end = {
+      x: airportLookup.FRA.x,
+      y: airportLookup.FRA.y + laneOffset * 0.32
+    };
+
+    record.pathPoints = [
+      start,
+      { x: start.x + (hub.x - start.x) * 0.42, y: start.y + laneOffset * 1.15 },
+      { x: hub.x - 12, y: hub.y - laneOffset * 0.12 },
+      { x: hub.x + 12, y: hub.y + laneOffset * 0.12 },
+      { x: end.x - (end.x - hub.x) * 0.42, y: end.y + laneOffset * 1.15 },
+      end
+    ];
+    record.labelPoint = { x: hub.x, y: hub.y - 52 };
+  });
+
+  experienceState.svg.selectAll('g.route-group').each(function(record) {
+    const group = d3.select(this);
+    const toneColor = getOutcomeToneColor(record.outcome.tone, record.route.color);
+    const pathValue = routeLine(record.pathPoints);
+
+    group.select('path.route-glow')
+      .attr('d', pathValue)
+      .attr('stroke', toneColor);
+    group.select('path.route-track')
+      .attr('d', pathValue)
+      .attr('stroke', record.route.color);
+    group.select('path.route-dash').attr('d', pathValue);
+    group.select('path.route-hitbox').attr('d', pathValue);
+    group.select('circle.route-token')
+      .attr('fill', toneColor)
+      .attr('stroke', 'rgba(255,255,255,0.65)')
+      .attr('stroke-width', 1.2);
+    group.select('g.route-label')
+      .attr('transform', `translate(${record.labelPoint.x},${record.labelPoint.y})`);
+    group.select('text.route-label-text').text(`${record.code} | ${record.route.hub}`);
+    group.select('text.route-label-sub').text(record.outcome.label);
+  });
+
+  experienceState.svg.selectAll('g.airport-node')
+    .attr('transform', airport => `translate(${airport.x},${airport.y})`)
+    .each(function(airport) {
+      const group = d3.select(this);
+      group.select('circle.airport-ring').attr('r', airport.fixed ? 26 : 22);
+      group.select('circle.airport-pulse')
+        .attr('r', airport.fixed ? 16 : 14)
+        .attr('stroke', airport.fixed ? 'rgba(0,212,255,0.18)' : 'rgba(255,255,255,0.16)');
+      group.select('circle.airport-core')
+        .attr('r', airport.fixed ? 11 : 9)
+        .attr('fill', airport.fixed ? '#00d4ff' : '#131c2e');
+    });
+
+  if (restartTokens) {
+    restartRouteTokenAnimations();
+  }
+}
+
+function restartRouteTokenAnimations() {
+  if (!window.d3 || !experienceState.svg) return;
+
+  const d3 = window.d3;
+
+  experienceState.svg.selectAll('g.route-group').each(function(record, index) {
+    const group = d3.select(this);
+    const path = group.select('path.route-track').node();
+    const token = group.select('circle.route-token');
+
+    if (!path || !token.node()) return;
+
+    const totalLength = path.getTotalLength();
+    const startPoint = path.getPointAtLength(0);
+    const duration = 5200 + index * 850;
+
+    token.interrupt();
+    token.attr('transform', `translate(${startPoint.x},${startPoint.y})`);
+
+    const repeat = () => {
+      token.transition()
+        .duration(duration)
+        .ease(d3.easeLinear)
+        .attrTween('transform', () => t => {
+          const point = path.getPointAtLength(totalLength * t);
+          return `translate(${point.x},${point.y})`;
+        })
+        .on('end', repeat);
+    };
+
+    repeat();
+  });
+}
+
+function renderRouteExperience() {
+  if (!window.d3) return;
+
+  const stage = document.getElementById('routeStageSurface');
+  const svgElement = document.getElementById('routeExperience');
+
+  if (!stage || !svgElement) return;
+
+  initializeExperienceScene();
+
+  const d3 = window.d3;
+  const width = Math.max(stage.clientWidth, 320);
+  const height = Math.max(stage.clientHeight, 280);
+  const defaults = getDefaultAirportPositions(width, height);
+  const airportCodes = ['BLR', ...Object.values(ROUTES).map(route => route.hub), 'FRA']
+    .filter((code, index, array) => array.indexOf(code) === index);
+
+  experienceState.width = width;
+  experienceState.height = height;
+  experienceState.routeRecords = buildExperienceRecords();
+  experienceState.airportData = airportCodes.map(code => {
+    const position = clampExperienceNodePosition(code, defaults, width, height);
+    experienceState.nodePositions[code] = position;
+
+    return {
+      code,
+      city: AIRPORT_META[code]?.city || code,
+      fixed: AIRPORT_META[code]?.fixed || false,
+      x: position.x,
+      y: position.y
+    };
+  });
+
+  experienceState.svg = d3.select(svgElement)
+    .attr('viewBox', `0 0 ${width} ${height}`);
+  experienceState.svg.selectAll('*').remove();
+
+  experienceState.svg.append('g')
+    .attr('class', 'ambient-layer')
+    .selectAll('path.route-grid-line')
+    .data([height * 0.24, height * 0.5, height * 0.76])
+    .join('path')
+    .attr('class', 'route-grid-line')
+    .attr('d', y => `M 24 ${y} Q ${width / 2} ${y - 18} ${width - 24} ${y}`);
+
+  experienceState.svg.append('g')
+    .attr('class', 'orbit-layer')
+    .selectAll('circle.route-orbit')
+    .data([
+      { x: defaults.BLR.x, y: defaults.BLR.y, r: 52 },
+      { x: defaults.FRA.x, y: defaults.FRA.y, r: 56 }
+    ])
+    .join('circle')
+    .attr('class', 'route-orbit')
+    .attr('cx', orbit => orbit.x)
+    .attr('cy', orbit => orbit.y)
+    .attr('r', orbit => orbit.r);
+
+  const routeGroups = experienceState.svg.append('g')
+    .attr('class', 'route-layer')
+    .selectAll('g.route-group')
+    .data(experienceState.routeRecords, record => record.code)
+    .join('g')
+    .attr('class', 'route-group')
+    .attr('data-airline', record => record.code)
+    .on('mouseenter', (event, record) => {
+      experienceState.hoverCode = record.code;
+      showRouteTooltip(event, record);
+      updateExperienceCopy();
+      applyExperienceFocusState();
+    })
+    .on('mousemove', (event, record) => {
+      showRouteTooltip(event, record);
+    })
+    .on('mouseleave', () => {
+      experienceState.hoverCode = null;
+      hideRouteTooltip();
+      updateExperienceCopy();
+      applyExperienceFocusState();
+    })
+    .on('click', (event, record) => {
+      event.preventDefault();
+      handleExperienceRouteClick(record.code);
+    });
+
+  routeGroups.append('path').attr('class', 'route-glow');
+  routeGroups.append('path').attr('class', 'route-track');
+  routeGroups.append('path').attr('class', 'route-dash');
+  routeGroups.append('path').attr('class', 'route-hitbox');
+  routeGroups.append('circle').attr('class', 'route-token').attr('r', 5);
+
+  const routeLabels = routeGroups.append('g').attr('class', 'route-label');
+  routeLabels.append('rect')
+    .attr('class', 'route-label-badge')
+    .attr('x', -50)
+    .attr('y', -22)
+    .attr('width', 100)
+    .attr('height', 44)
+    .attr('rx', 16)
+    .attr('ry', 16);
+  routeLabels.append('text')
+    .attr('class', 'route-label-text')
+    .attr('x', 0)
+    .attr('y', -4);
+  routeLabels.append('text')
+    .attr('class', 'route-label-sub')
+    .attr('x', 0)
+    .attr('y', 12);
+
+  const nodeGroups = experienceState.svg.append('g')
+    .attr('class', 'airport-layer')
+    .selectAll('g.airport-node')
+    .data(experienceState.airportData, airport => airport.code)
+    .join('g')
+    .attr('class', airport => `airport-node${airport.fixed ? ' fixed' : ''}`);
+
+  nodeGroups.append('circle').attr('class', 'airport-ring');
+  nodeGroups.append('circle').attr('class', 'airport-pulse');
+  nodeGroups.append('circle').attr('class', 'airport-core');
+  nodeGroups.append('text')
+    .attr('class', 'airport-code')
+    .attr('y', 4)
+    .text(airport => airport.code);
+  nodeGroups.append('text')
+    .attr('class', 'airport-city')
+    .attr('y', 26)
+    .text(airport => airport.city);
+
+  nodeGroups.call(
+    d3.drag()
+      .on('start', function(event, airport) {
+        if (airport.fixed) return;
+        d3.select(this).raise();
+      })
+      .on('drag', (event, airport) => {
+        if (airport.fixed) return;
+
+        airport.x = Math.min(width - 26, Math.max(26, event.x));
+        airport.y = Math.min(height - 26, Math.max(26, event.y));
+        experienceState.nodePositions[airport.code] = { x: airport.x, y: airport.y };
+        updateRouteExperienceGeometry();
+      })
+      .on('end', () => {
+        updateExperienceCopy();
+        applyExperienceFocusState();
+      })
+  );
+
+  updateRouteExperienceGeometry(true);
+  applyExperienceFocusState();
+}
+
+function renderLayoverPulse() {
+  if (!window.d3) return;
+
+  const svgElement = document.getElementById('layoverPulse');
+  if (!svgElement) return;
+
+  const d3 = window.d3;
+  const width = Math.max(svgElement.parentElement.clientWidth - 32, 240);
+  const height = Math.max(svgElement.clientHeight || 150, 150);
+  const records = buildExperienceRecords();
+  const margin = { top: 14, right: 10, bottom: 26, left: 28 };
+  const x = d3.scaleBand()
+    .domain(records.map(record => record.code))
+    .range([margin.left, width - margin.right])
+    .padding(0.34);
+  const y = d3.scaleLinear()
+    .domain([0, Math.max(d3.max(records, record => getBarLayoverValue(record)) || 0, 220)])
+    .nice()
+    .range([height - margin.bottom, margin.top]);
+  const thresholds = [60, 120, 180].filter(value => value <= y.domain()[1]);
+
+  const svg = d3.select(svgElement)
+    .attr('viewBox', `0 0 ${width} ${height}`);
+  svg.selectAll('*').remove();
+
+  svg.append('g')
+    .attr('class', 'chart-grid')
+    .selectAll('line')
+    .data(thresholds)
+    .join('line')
+    .attr('x1', margin.left)
+    .attr('x2', width - margin.right)
+    .attr('y1', value => y(value))
+    .attr('y2', value => y(value));
+
+  svg.append('g')
+    .attr('class', 'chart-axis')
+    .selectAll('text')
+    .data(thresholds)
+    .join('text')
+    .attr('x', 6)
+    .attr('y', value => y(value) + 4)
+    .text(value => `${value}m`);
+
+  const bars = svg.append('g')
+    .selectAll('g.chart-bar')
+    .data(records, record => record.code)
+    .join('g')
+    .attr('class', 'chart-bar')
+    .attr('data-airline', record => record.code)
+    .on('mouseenter', (event, record) => {
+      experienceState.hoverCode = record.code;
+      updateExperienceCopy();
+      applyExperienceFocusState();
+    })
+    .on('mouseleave', () => {
+      experienceState.hoverCode = null;
+      updateExperienceCopy();
+      applyExperienceFocusState();
+    })
+    .on('click', (event, record) => {
+      event.preventDefault();
+      handleExperienceRouteClick(record.code);
+    });
+
+  bars.append('rect').attr('class', 'chart-bar-fill');
+  bars.append('text').attr('class', 'chart-bar-value');
+  bars.append('text').attr('class', 'chart-bar-state');
+
+  bars.select('rect.chart-bar-fill')
+    .attr('x', record => x(record.code))
+    .attr('width', x.bandwidth())
+    .attr('rx', 14)
+    .attr('ry', 14)
+    .attr('fill', record => getOutcomeToneColor(record.outcome.tone, record.route.color))
+    .attr('opacity', record => record.live?.isLive ? 0.86 : 0.58)
+    .attr('y', y(0))
+    .attr('height', 0)
+    .transition()
+    .duration(700)
+    .delay((record, index) => index * 80)
+    .ease(d3.easeCubicOut)
+    .attr('y', record => y(getBarLayoverValue(record)))
+    .attr('height', record => y(0) - y(getBarLayoverValue(record)));
+
+  bars.select('text.chart-bar-value')
+    .attr('x', record => x(record.code) + (x.bandwidth() / 2))
+    .attr('y', record => y(getBarLayoverValue(record)) - 8)
+    .text(record => {
+      if (record.live?.isLive) return `${getBarLayoverValue(record)}m`;
+      return record.outcome.tone === 'manual' ? 'manual' : 'pending';
+    });
+
+  bars.select('text.chart-bar-state')
+    .attr('x', record => x(record.code) + (x.bandwidth() / 2))
+    .attr('y', height - 8)
+    .text(record => record.code);
+
+  applyExperienceFocusState();
+}
+
+function animateSummaryCounters() {
+  const valueNodes = document.querySelectorAll('.summary-chip .val[data-target]');
+
+  if (!valueNodes.length) return;
+
+  if (!window.d3) {
+    valueNodes.forEach(node => {
+      node.textContent = node.dataset.target || '0';
+    });
+    return;
+  }
+
+  const d3 = window.d3;
+
+  valueNodes.forEach(node => {
+    const target = Number(node.dataset.target || 0);
+    const current = Number(node.textContent || 0);
+
+    d3.select(node)
+      .interrupt()
+      .transition()
+      .duration(850)
+      .ease(d3.easeCubicOut)
+      .tween('text', () => {
+        const interpolate = d3.interpolateNumber(current, target);
+        return progress => {
+          node.textContent = String(Math.round(interpolate(progress)));
+        };
+      });
+  });
+}
+
+function animateStagedElements() {
+  const stagedElements = document.querySelectorAll('.staged-card, .staged-metric');
+
+  stagedElements.forEach((element, index) => {
+    element.classList.remove('is-visible');
+    element.style.setProperty('--stagger-delay', `${index * 55}ms`);
+  });
+
+  window.requestAnimationFrame(() => {
+    stagedElements.forEach(element => {
+      element.classList.add('is-visible');
+    });
+    animateSummaryCounters();
+  });
+}
+
+function scrollToPendingAirline() {
+  if (!pendingAirlineScroll) return;
+
+  const target = document.querySelector(
+    `.journey-card[data-airline="${pendingAirlineScroll}"], .strategy-card[data-airline="${pendingAirlineScroll}"]`
+  );
+
+  if (!target) return;
+
+  pendingAirlineScroll = null;
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function syncInteractiveExperience() {
+  if (window.d3) {
+    renderRouteExperience();
+    renderLayoverPulse();
+  }
+
+  updateExperienceCopy();
+  applyExperienceFocusState();
 }
 
 async function fetchLocalTrackerPayload(date, airline) {
@@ -794,5 +1549,6 @@ window.onload = () => {
   dates = generateDates();
   selectedDate = getSelectedDateIndex();
   renderDateStrip();
+  syncInteractiveExperience();
   fetchData();
 };

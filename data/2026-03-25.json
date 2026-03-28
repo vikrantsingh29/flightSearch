@@ -66,8 +66,8 @@
     },
     "QR": {
       "isLive": false,
-      "error": "Qatar Airways did not publish BLR-DOH flight-status results for the requested date.",
-      "code": "tracked_flights_missing",
+      "error": "fetch failed",
+      "code": "unexpected_error",
       "source": "Qatar Airways official flight status"
     },
     "GF": {
@@ -81,6 +81,6 @@
       "error": "No free automated local scraper is implemented for AI yet."
     }
   },
-  "snapshotGeneratedAt": "2026-03-28T18:09:12.003Z",
+  "snapshotGeneratedAt": "2026-03-28T20:43:29.584Z",
   "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
 }
