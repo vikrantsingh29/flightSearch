@@ -115,7 +115,7 @@
       "notes": [
         "QR573: ARRIVED",
         "No onward connection published",
-        "Available DOH-FRA results: QR069 CANCELLED, QR067 CANCELLED"
+        "Available DOH-FRA results: QR067 CANCELLED"
       ]
     },
     "GF": {
@@ -129,6 +129,6 @@
       "error": "No free automated local scraper is implemented for AI yet."
     }
   },
-  "snapshotGeneratedAt": "2026-03-27T18:19:45.758Z",
+  "snapshotGeneratedAt": "2026-03-28T00:23:47.008Z",
   "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
 }
