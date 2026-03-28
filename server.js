@@ -40,6 +40,10 @@ const TRACKED_ROUTES = {
 };
 
 const MANUAL_AIRLINES = ['GF', 'AI'];
+const MANUAL_AIRLINE_MESSAGES = {
+  GF: 'Gulf Air still needs browser-based checking. Its official booking app accepts a prefilled BLR to FRA search, but helper-side fare scraping is blocked by the airline bot check.',
+  AI: 'Air India now exposes official INR route-fare pages and an authenticated status flow, but the BLR to FRA feeder-flight mapping in this tracker still needs a refresh before live automation can be switched on safely.'
+};
 const LONG_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -858,7 +862,7 @@ async function buildTrackerPayload(dateStr, airline = 'all') {
     payload.airlines[code] = {
       isLive: false,
       unsupported: true,
-      error: `No free automated local scraper is implemented for ${code} yet.`
+      error: MANUAL_AIRLINE_MESSAGES[code] || `No free automated local scraper is implemented for ${code} yet.`
     };
   }
 

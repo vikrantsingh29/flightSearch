@@ -7,6 +7,10 @@ This app tracks BLR -> FRA options with:
 - Emirates and Qatar Airways from official-source scraper output
 - Gulf Air and Air India via official fallback links
 
+Current findings for the manual airlines:
+- Gulf Air exposes official status and booking pages, but its booking app currently trips bot-verification when queried from the helper. The UI now opens a prefilled official BLR -> FRA fare search in the browser.
+- Air India publishes BLR -> FRA fare pages in the India storefront with INR pricing, but the first-leg feeder flight numbers in this tracker need a refresh before the official status API can be promoted safely into live automation.
+
 ## Modes
 
 Local live mode:
@@ -49,3 +53,4 @@ This creates a `dist/` folder with:
 - GitHub Pages is static, so it cannot run the live Node helper directly.
 - The deployed site therefore shows published snapshots, not direct live server-side scraping from the browser.
 - When an airline does not publish a usable public result for a date, the app falls back to official airline and airport links instead of fake data.
+- For Gulf Air and Air India, the fallback cards now include researched fare links instead of only generic status links.
