@@ -115,7 +115,7 @@
       "notes": [
         "QR573: ARRIVED",
         "No onward connection published",
-        "Available DOH-FRA results: QR069 CANCELLED, QR067 CANCELLED"
+        "Available DOH-FRA results: QR067 CANCELLED"
       ]
     },
     "GF": {
@@ -129,6 +129,6 @@
       "error": "Air India now exposes official INR route-fare pages and an authenticated status flow, but the BLR to FRA feeder-flight mapping in this tracker still needs a refresh before live automation can be switched on safely."
     }
   },
-  "snapshotGeneratedAt": "2026-03-29T18:10:04.626Z",
+  "snapshotGeneratedAt": "2026-03-30T00:26:53.455Z",
   "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
 }
