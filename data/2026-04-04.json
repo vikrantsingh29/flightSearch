@@ -70,22 +70,22 @@
       "requestedDate": "2026-04-04",
       "resolvedDate": "2026-04-04",
       "leg1FlightNumber": "QR573",
-      "leg1Status": "scheduled",
+      "leg1Status": "on-time",
       "leg1Delay": 0,
-      "leg1DepActual": null,
-      "leg1ArrActual": "06:13",
+      "leg1DepActual": "04:00",
+      "leg1ArrActual": "06:08",
       "leg1ScheduledDep": "04:00",
       "leg1ScheduledArr": "06:20",
       "leg1EstimatedDep": null,
-      "leg1EstimatedArr": "06:13",
+      "leg1EstimatedArr": "06:08",
       "leg1DepDisplay": "04:00",
-      "leg1ArrDisplay": "06:13",
-      "leg1DepLabel": "Scheduled departure",
+      "leg1ArrDisplay": "06:08",
+      "leg1DepLabel": "Actual departure",
       "leg1ArrLabel": "Estimated arrival",
       "leg1Duration": "4h50m",
       "leg1TimeLeft": null,
-      "leg1RawStatus": "SCHEDULED",
-      "leg1RawStatusCode": "PDEP",
+      "leg1RawStatus": "DEPARTED",
+      "leg1RawStatusCode": "ENRT",
       "leg1SourceUrl": "https://fs.qatarairways.com/flightstatus/search",
       "leg1Missing": false,
       "leg2FlightNumber": "No connection",
@@ -113,9 +113,9 @@
       "connectionPossible": false,
       "connectionReason": "No DOH-FRA departure is published after QR573 arrives in Doha.",
       "notes": [
-        "QR573: SCHEDULED",
+        "QR573: DEPARTED",
         "No onward connection published",
-        "Available DOH-FRA results: QR069 SCHEDULED"
+        "Available DOH-FRA results: QR069 DEPARTED"
       ]
     },
     "GF": {
@@ -129,6 +129,6 @@
       "error": "Air India now exposes official INR route-fare pages and an authenticated status flow, but the BLR to FRA feeder-flight mapping in this tracker still needs a refresh before live automation can be switched on safely."
     }
   },
-  "snapshotGeneratedAt": "2026-04-03T18:13:07.096Z",
+  "snapshotGeneratedAt": "2026-04-04T00:24:28.480Z",
   "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
 }
