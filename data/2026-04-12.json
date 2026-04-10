@@ -93,25 +93,25 @@
       "leg2Delay": 0,
       "leg2DepActual": null,
       "leg2ArrActual": null,
-      "leg2ScheduledDep": "07:40",
+      "leg2ScheduledDep": "08:00",
       "leg2ScheduledArr": "14:35",
       "leg2EstimatedDep": null,
       "leg2EstimatedArr": null,
-      "leg2DepDisplay": "07:40",
+      "leg2DepDisplay": "08:00",
       "leg2ArrDisplay": "14:35",
       "leg2DepLabel": "Scheduled departure",
       "leg2ArrLabel": "Scheduled arrival",
-      "leg2Duration": "7h55m",
+      "leg2Duration": "7h35m",
       "leg2TimeLeft": null,
       "leg2RawStatus": "SCHEDULED",
-      "leg2RawStatusCode": "PDEP",
+      "leg2RawStatusCode": "PDEP_RSCH",
       "leg2SourceUrl": "https://fs.qatarairways.com/flightstatus/search",
       "leg2Missing": false,
-      "layoverScheduledMinutes": 80,
-      "layoverActualMinutes": 80,
+      "layoverScheduledMinutes": 100,
+      "layoverActualMinutes": 100,
       "minimumLayoverMinutes": 90,
-      "connectionPossible": false,
-      "connectionReason": "QR067 leaves before the 90m minimum connection at DOH.",
+      "connectionPossible": true,
+      "connectionReason": null,
       "notes": [
         "QR573: SCHEDULED",
         "QR067: SCHEDULED"
@@ -128,6 +128,6 @@
       "error": "Air India now exposes official INR route-fare pages and an authenticated status flow, but the BLR to FRA feeder-flight mapping in this tracker still needs a refresh before live automation can be switched on safely."
     }
   },
-  "snapshotGeneratedAt": "2026-04-09T18:22:06.869Z",
+  "snapshotGeneratedAt": "2026-04-10T00:30:38.371Z",
   "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
 }
