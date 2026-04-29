@@ -81,6 +81,6 @@
       "error": "Air India now exposes official INR route-fare pages and an authenticated status flow, but the BLR to FRA feeder-flight mapping in this tracker still needs a refresh before live automation can be switched on safely."
     }
   },
-  "snapshotGeneratedAt": "2026-04-29T06:50:54.004Z",
+  "snapshotGeneratedAt": "2026-04-29T12:34:11.041Z",
   "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
 }
