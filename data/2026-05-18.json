@@ -37,21 +37,21 @@
       "leg1Missing": false,
       "leg2FlightNumber": "EK047",
       "leg2Status": "delayed",
-      "leg2Delay": 9,
+      "leg2Delay": 10,
       "leg2DepActual": "14:49",
-      "leg2ArrActual": "20:14",
+      "leg2ArrActual": "20:15",
       "leg2ScheduledDep": "14:50",
       "leg2ScheduledArr": "20:05",
       "leg2EstimatedDep": "14:51",
-      "leg2EstimatedArr": "20:14",
+      "leg2EstimatedArr": "20:17",
       "leg2DepDisplay": "14:49",
-      "leg2ArrDisplay": "20:14",
+      "leg2ArrDisplay": "20:15",
       "leg2DepLabel": "Actual departure",
-      "leg2ArrLabel": "Estimated arrival",
+      "leg2ArrLabel": "Actual arrival",
       "leg2Duration": "07:15",
-      "leg2TimeLeft": "04h 59m",
-      "leg2RawStatus": "In flight",
-      "leg2RawStatusCode": "ENRT",
+      "leg2TimeLeft": null,
+      "leg2RawStatus": "Arrived",
+      "leg2RawStatusCode": "ARVD",
       "leg2SourceUrl": "https://www.emirates.com/us/english/manage-booking/flight-status/results/?origin=DXB&destination=FRA&date=2026-05-18&date-input0=Monday%2C+18+May+26",
       "leg2Missing": false,
       "layoverScheduledMinutes": 125,
@@ -61,7 +61,7 @@
       "connectionReason": null,
       "notes": [
         "EK565: Arrived",
-        "EK047: In flight"
+        "EK047: Arrived"
       ]
     },
     "QR": {
@@ -128,6 +128,6 @@
       "error": "Air India now exposes official INR route-fare pages and an authenticated status flow, but the BLR to FRA feeder-flight mapping in this tracker still needs a refresh before live automation can be switched on safely."
     }
   },
-  "snapshotGeneratedAt": "2026-05-18T13:14:50.918Z",
+  "snapshotGeneratedAt": "2026-05-18T18:37:35.523Z",
   "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
 }
