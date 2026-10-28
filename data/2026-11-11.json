@@ -1,0 +1,86 @@
+{
+  "ok": true,
+  "date": "2026-11-11",
+  "source": "local-official-scraper",
+  "automatedAirlines": [
+    "EK",
+    "QR"
+  ],
+  "manualAirlines": [
+    "GF",
+    "AI"
+  ],
+  "airlines": {
+    "EK": {
+      "isLive": true,
+      "source": "Emirates official flight status",
+      "requestedDate": "2026-11-11",
+      "resolvedDate": "2026-11-11",
+      "leg1FlightNumber": "EK565",
+      "leg1Status": "scheduled",
+      "leg1Delay": 0,
+      "leg1DepActual": "10:25",
+      "leg1ArrActual": "13:00",
+      "leg1ScheduledDep": "10:25",
+      "leg1ScheduledArr": "13:00",
+      "leg1EstimatedDep": "10:25",
+      "leg1EstimatedArr": "13:00",
+      "leg1DepDisplay": "10:25",
+      "leg1ArrDisplay": "13:00",
+      "leg1DepLabel": "Scheduled departure",
+      "leg1ArrLabel": "Scheduled arrival",
+      "leg1Duration": "04:05",
+      "leg1TimeLeft": "04h 05m",
+      "leg1RawStatus": "Scheduled",
+      "leg1RawStatusCode": "PDEP",
+      "leg1SourceUrl": "https://www.emirates.com/us/english/manage-booking/flight-status/results/?origin=BLR&destination=DXB&date=2026-11-11&date-input0=Wednesday%2C+11+Nov+26",
+      "leg1Missing": false,
+      "leg2FlightNumber": "EK047",
+      "leg2Status": "scheduled",
+      "leg2Delay": 0,
+      "leg2DepActual": "15:10",
+      "leg2ArrActual": "19:20",
+      "leg2ScheduledDep": "15:10",
+      "leg2ScheduledArr": "19:20",
+      "leg2EstimatedDep": "15:10",
+      "leg2EstimatedArr": "19:20",
+      "leg2DepDisplay": "15:10",
+      "leg2ArrDisplay": "19:20",
+      "leg2DepLabel": "Scheduled departure",
+      "leg2ArrLabel": "Scheduled arrival",
+      "leg2Duration": "07:10",
+      "leg2TimeLeft": "07h 10m",
+      "leg2RawStatus": "Scheduled",
+      "leg2RawStatusCode": "PDEP",
+      "leg2SourceUrl": "https://www.emirates.com/us/english/manage-booking/flight-status/results/?origin=DXB&destination=FRA&date=2026-11-11&date-input0=Wednesday%2C+11+Nov+26",
+      "leg2Missing": false,
+      "layoverScheduledMinutes": 130,
+      "layoverActualMinutes": 130,
+      "minimumLayoverMinutes": 120,
+      "connectionPossible": true,
+      "connectionReason": null,
+      "notes": [
+        "EK565: Scheduled",
+        "EK047: Scheduled"
+      ]
+    },
+    "QR": {
+      "isLive": false,
+      "error": "Qatar Airways did not publish BLR-DOH flight-status results for the requested date.",
+      "code": "tracked_flights_missing",
+      "source": "Qatar Airways official flight status"
+    },
+    "GF": {
+      "isLive": false,
+      "unsupported": true,
+      "error": "Gulf Air still needs browser-based checking. Its official booking app accepts a prefilled BLR to FRA search, but helper-side fare scraping is blocked by the airline bot check."
+    },
+    "AI": {
+      "isLive": false,
+      "unsupported": true,
+      "error": "Air India now exposes official INR route-fare pages and an authenticated status flow, but the BLR to FRA feeder-flight mapping in this tracker still needs a refresh before live automation can be switched on safely."
+    }
+  },
+  "snapshotGeneratedAt": "2026-10-28T03:45:34.004Z",
+  "pagesUrl": "https://vikrantsingh29.github.io/flightSearch/"
+}
